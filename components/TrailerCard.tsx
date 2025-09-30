@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import type { Movie } from '../types';
 import { ContentType } from '../types';
@@ -89,6 +88,7 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
           loop: 1,
           playlist: trailerKey,
           fs: 0,
+          origin: window.location.origin, // Critical for deployed apps
         },
         events: {
           onReady: onPlayerReady,
