@@ -1,5 +1,4 @@
-
-import { TMDB_API_KEY, TMDB_API_BASE_URL } from '../constants';
+import { TMDB_API_BASE_URL, TMDB_API_KEY } from '../constants';
 import type { Movie, VideosResponse, Genre, FilterState } from '../types';
 import { ContentType, VideoResult } from '../types';
 

@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import type { Movie } from '../types';
+import type { Movie, Recommendation } from '../types';
 import { ContentType } from '../types';
 import { TMDB_BACKDROP_BASE_URL } from '../constants';
 import { HeartIcon, XMarkIcon, EyeIcon, StarIcon, MutedIcon, UnmutedIcon } from './icons';
@@ -17,9 +18,27 @@ interface TrailerCardProps {
   isActive: boolean;
   contentType: ContentType;
   trailerKey: string | null | undefined; // Added for preloading
+  recommendation?: Recommendation;
 }
 
-const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, contentType, trailerKey }) => {
+const RecommendationBubble: React.FC<{ recommendation: Recommendation }> = ({ recommendation }) => (
+    <div 
+      className="flex items-center bg-white/10 p-2 rounded-xl shadow-lg animate-levitate animate-fade-in mt-3"
+      style={{ animationDelay: '0.5s' }}
+    >
+      <img 
+        src={recommendation.avatarUrl} 
+        alt={recommendation.name} 
+        className="w-9 h-9 rounded-full object-cover border-2 border-white/50"
+      />
+      <div className="ml-2 mr-1 text-white text-xs">
+        <p className="font-semibold">{recommendation.name}</p>
+        <p className="text-gray-300 -mt-0.5">{recommendation.text}</p>
+      </div>
+    </div>
+  );
+
+const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, contentType, trailerKey, recommendation }) => {
   const isLoading = trailerKey === undefined; // Loading if key is not yet fetched
   const [isMuted, setIsMuted] = useState(true);
   const [ytApiReady, setYtApiReady] = useState(false);
@@ -223,15 +242,18 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
         </div>
         
         <div className="flex-grow p-4 flex flex-col justify-between bg-brand-surface">
-            <div className="space-y-2">
-                <h2 className="text-2xl font-bold truncate">{movie.title}</h2>
-                <div className="flex items-center text-sm text-brand-muted">
-                    <span>{movie.release_date?.substring(0,4) || movie.first_air_date?.substring(0,4)}</span>
-                    <span className="mx-2">•</span>
-                    <StarIcon />
-                    <span className="ml-1">{movie.vote_average.toFixed(1)}</span>
+            <div>
+                <div className="space-y-2">
+                    <h2 className="text-2xl font-bold truncate">{movie.title}</h2>
+                    <div className="flex items-center text-sm text-brand-muted">
+                        <span>{movie.release_date?.substring(0,4) || movie.first_air_date?.substring(0,4)}</span>
+                        <span className="mx-2">•</span>
+                        <StarIcon />
+                        <span className="ml-1">{movie.vote_average.toFixed(1)}</span>
+                    </div>
+                    <p className="text-sm text-brand-secondary line-clamp-3">{movie.overview || "Описание отсутствует."}</p>
                 </div>
-                <p className="text-sm text-brand-secondary line-clamp-3">{movie.overview || "Описание отсутствует."}</p>
+                {recommendation && <RecommendationBubble recommendation={recommendation} />}
             </div>
 
             <div className="flex justify-around items-center pt-4">
