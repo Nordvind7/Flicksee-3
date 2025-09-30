@@ -17,8 +17,12 @@ const LikedList: React.FC<LikedListProps> = ({ movies, title = "Хочу пос�
     <div className="p-4 pt-24 h-full overflow-y-auto">
         <h2 className="text-3xl font-bold mb-6 text-white">{title}</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {movies.map((movie) => (
-            <div key={movie.id} className="group relative rounded-lg overflow-hidden shadow-lg">
+            {movies.map((movie, index) => (
+            <div 
+                key={movie.id} 
+                className="group relative rounded-lg overflow-hidden shadow-lg animate-fade-in-up"
+                style={{ animationDelay: `${Math.min(index * 50, 500)}ms`, animationFillMode: 'both' }}
+            >
                 <img
                     src={`${TMDB_IMAGE_BASE_URL}${movie.poster_path}`}
                     alt={movie.title}
@@ -36,4 +40,3 @@ const LikedList: React.FC<LikedListProps> = ({ movies, title = "Хочу пос�
 };
 
 export default LikedList;
-   

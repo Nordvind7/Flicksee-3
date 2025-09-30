@@ -1,19 +1,20 @@
+
 import React from 'react';
 
 export const HeartIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" fill="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" viewBox="0 0 24 24" fill="currentColor">
     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
   </svg>
 );
 
 export const XMarkIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-8 h-8">
     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
   </svg>
 );
 
 export const EyeIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
     <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
     <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
   </svg>
@@ -50,8 +51,8 @@ export const StarIcon = () => (
 );
 
 export const StartIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
     </svg>
 );
 
@@ -64,7 +65,7 @@ export const LoadingIcon = () => (
 
 export const TelegramIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-white hover:text-blue-400 transition-colors" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.84c.12.5-.13 1-.61 1.25l-7.85 3.03c-.4.15-.81-.03-1.01-.39-.2-.36-.09-.8.21-1.06l7.85-3.03c.4-.15.81.04 1.01.39.01.01 0 .01 0 0zm-7.6 4.31l-1.92 6.4c-.17.57.29 1.11.89 1.11.39 0 .74-.24.89-.6l1.92-6.4c.17-.57-.29-1.11-.89-1.11-.39 0-.74.24-.89.6z"></path>
+       <path d="M12 .397c-6.4 0-11.603 5.203-11.603 11.603 0 6.4 5.203 11.603 11.603 11.603 6.4 0 11.603-5.203 11.603-11.603C23.603 5.6 18.4.397 12 .397zm5.525 8.133l-2.14 10.05c-.218.995-1.218 1.24-1.95.77l-3.273-2.41-1.573 1.51c-.17.17-.39.25-.61.25l.22-3.33 6.1-5.52c.27-.24-.05-.38-.41-.14l-7.55 4.7-3.2-.99c-.98-.31-.99-1.52.2-2.21l12.52-4.82c.81-.32 1.52.2 1.28.98z"/>
     </svg>
 );
 

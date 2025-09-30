@@ -1,9 +1,9 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import type { Movie } from '../types';
 import { ContentType } from '../types';
-import { fetchTrailerKey } from '../services/tmdb';
 import { TMDB_BACKDROP_BASE_URL } from '../constants';
-import { HeartIcon, XMarkIcon, EyeIcon, InfoIcon, StarIcon, MutedIcon, UnmutedIcon } from './icons';
+import { HeartIcon, XMarkIcon, EyeIcon, StarIcon, MutedIcon, UnmutedIcon } from './icons';
 
 declare global {
   interface Window {
@@ -17,12 +17,11 @@ interface TrailerCardProps {
   onSwipe: (direction: 'left' | 'right' | 'up') => void;
   isActive: boolean;
   contentType: ContentType;
+  trailerKey: string | null | undefined; // Added for preloading
 }
 
-const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, contentType }) => {
-  const [trailerKey, setTrailerKey] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showInfo, setShowInfo] = useState(false);
+const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, contentType, trailerKey }) => {
+  const isLoading = trailerKey === undefined; // Loading if key is not yet fetched
   const [isMuted, setIsMuted] = useState(true);
   const [ytApiReady, setYtApiReady] = useState(false);
 
@@ -32,13 +31,11 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
   const startPos = useRef({ x: 0, y: 0 });
   const currentPos = useRef({ x: 0, y: 0 });
 
-  // Ref to hold the most current `isActive` state to be accessible in callbacks like onReady
   const isActiveRef = useRef(isActive);
   useEffect(() => {
     isActiveRef.current = isActive;
   }, [isActive]);
 
-  // Check if the YouTube IFrame API script is ready
   useEffect(() => {
     if (window.YT && window.YT.Player) {
       setYtApiReady(true);
@@ -53,16 +50,9 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
     return () => clearInterval(intervalId);
   }, []);
 
-  // Fetch the trailer key for the movie
-  useEffect(() => {
-    setIsLoading(true);
-    fetchTrailerKey(movie.id, contentType)
-      .then(setTrailerKey)
-      .finally(() => setIsLoading(false));
-  }, [movie.id, contentType]);
-
   // Create and destroy the YouTube player instance.
   useEffect(() => {
+    // Wait for API, and a valid (non-undefined, non-null) trailer key
     if (!trailerKey || !ytApiReady) {
       return;
     }
@@ -71,11 +61,18 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
       playerRef.current = event.target;
       playerRef.current.mute();
       setIsMuted(true);
-      // If the card is already active when the player becomes ready, play immediately.
       if (isActiveRef.current) {
         playerRef.current.playVideo();
       }
     };
+    
+    const onStateChange = (event: any) => {
+        // When video ends, and loop is enabled, it should restart automatically.
+        // This is a backup for some edge cases.
+        if (event.data === window.YT.PlayerState.ENDED) {
+            playerRef.current.seekTo(0);
+        }
+    }
 
     const playerElement = cardRef.current?.querySelector(`#player-${movie.id}`);
     if (playerElement && !playerRef.current) {
@@ -89,12 +86,13 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
           rel: 0,
           modestbranding: 1,
           iv_load_policy: 3,
-          loop: 1, // Use native YouTube player looping
-          playlist: trailerKey, // Required for loop: 1
+          loop: 1,
+          playlist: trailerKey,
           fs: 0,
         },
         events: {
           onReady: onPlayerReady,
+          onStateChange: onStateChange,
         },
       });
     }
@@ -107,7 +105,6 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
     };
   }, [trailerKey, ytApiReady, movie.id]);
 
-  // Control playback (play/pause) based on `isActive` state.
   useEffect(() => {
     if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
       if (isActive) {
@@ -120,7 +117,7 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
 
 
   const toggleMute = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card drag when clicking the button
+    e.stopPropagation();
     const player = playerRef.current;
     if (!player || typeof player.isMuted !== 'function') return;
 
@@ -200,7 +197,7 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
     >
       <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl bg-brand-surface flex flex-col">
         <div className="w-full aspect-video bg-black flex items-center justify-center relative">
-            {isLoading && <p>Загрузка трейлера...</p>}
+            {isLoading && <p className="text-brand-muted">Загрузка трейлера...</p>}
             {!isLoading && trailerKey && (
               <>
                 <div id={`player-${movie.id}`} className="w-full h-full"></div>
@@ -219,28 +216,22 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
                  <div className="w-full h-full relative">
                     <img src={`${TMDB_BACKDROP_BASE_URL}${movie.backdrop_path}`} alt={movie.title} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-center p-4">
-                        <p>Трейлер не найден.</p>
+                        <p className="text-brand-muted">Трейлер не найден.</p>
                     </div>
                 </div>
             )}
         </div>
         
         <div className="flex-grow p-4 flex flex-col justify-between bg-brand-surface">
-            <div>
+            <div className="space-y-2">
                 <h2 className="text-2xl font-bold truncate">{movie.title}</h2>
-                <div className="flex items-center text-sm text-brand-muted mt-1">
+                <div className="flex items-center text-sm text-brand-muted">
                     <span>{movie.release_date?.substring(0,4) || movie.first_air_date?.substring(0,4)}</span>
                     <span className="mx-2">•</span>
                     <StarIcon />
                     <span className="ml-1">{movie.vote_average.toFixed(1)}</span>
                 </div>
-                 <div className="mt-2">
-                    <button onClick={() => setShowInfo(!showInfo)} className="flex items-center text-sm text-brand-muted hover:text-white transition-colors">
-                        <InfoIcon />
-                        <span className="ml-1">{showInfo ? 'Скрыть описание' : 'Подробнее'}</span>
-                    </button>
-                    {showInfo && <p className="text-sm text-brand-secondary mt-2 max-h-24 overflow-y-auto">{movie.overview || "Описание отсутствует."}</p>}
-                </div>
+                <p className="text-sm text-brand-secondary line-clamp-3">{movie.overview || "Описание отсутствует."}</p>
             </div>
 
             <div className="flex justify-around items-center pt-4">
@@ -263,10 +254,10 @@ const ActionButton: React.FC<{
     <button
         onClick={onClick}
         aria-label={ariaLabel}
-        className={`rounded-full p-4 flex items-center justify-center transition-transform hover:scale-110
+        className={`rounded-full p-4 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-110
             ${isPrimary 
-                ? 'bg-brand-primary text-white shadow-lg' 
-                : 'bg-white/20 text-white'
+                ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/40 w-20 h-20' 
+                : 'bg-white/10 text-white w-16 h-16 hover:bg-white/20'
             }`
         }
     >
