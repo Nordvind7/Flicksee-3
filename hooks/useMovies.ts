@@ -2,6 +2,19 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Movie, FilterState } from '../types';
 import { fetchDiscoverContent } from '../services/tmdb';
 
+// Helper function to robustly compare filter states
+const areFiltersEqual = (a: FilterState, b: FilterState): boolean => {
+  if (!a || !b) return false;
+  if (a.contentType !== b.contentType) return false;
+  if (a.genres.length !== b.genres.length) return false;
+
+  // To compare genre arrays regardless of order, we sort them first.
+  const sortedA = [...a.genres].sort();
+  const sortedB = [...b.genres].sort();
+
+  return sortedA.every((value, index) => value === sortedB[index]);
+};
+
 const useMovies = (filters: FilterState) => {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -19,8 +32,8 @@ const useMovies = (filters: FilterState) => {
         const savedStateRaw = localStorage.getItem('flicksee_swipe_state');
         if (savedStateRaw) {
           const savedState = JSON.parse(savedStateRaw);
-          // Only restore if filters match
-          if (JSON.stringify(savedState.filters) === JSON.stringify(filters)) {
+          // Only restore if filters match using the robust comparison function
+          if (savedState.filters && areFiltersEqual(savedState.filters, filters)) {
             if (isMounted) {
               setMovies(savedState.movies || []);
               setPage(savedState.page || 1);
