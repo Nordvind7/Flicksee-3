@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import useMovies from '../hooks/useMovies';
 import TrailerCard from './TrailerCard';
@@ -11,6 +10,7 @@ interface SwipeContainerProps {
   onDislike: (movie: Movie) => void;
   onWatched: (movie: Movie) => void;
   filters: FilterState;
+  genreMap: Map<number, string>;
 }
 
 const PRELOAD_COUNT = 4;
@@ -23,13 +23,25 @@ const recommendations: Recommendation[] = [
     { name: 'Егор Соколов', avatarUrl: 'https://i.postimg.cc/j2qjBjDt/2025-09-30-22-23-28.jpg', text: 'это мы смотрим.' },
 ];
 
-const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWatched, filters }) => {
+const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWatched, filters, genreMap }) => {
   const { movies, isLoading, error, loadMoreMovies, hasMore } = useMovies(filters);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    try {
+      const savedIndexRaw = localStorage.getItem('flicksee_swipe_currentIndex');
+      if (savedIndexRaw) {
+        return parseInt(savedIndexRaw, 10);
+      }
+    } catch (e) {
+      console.error("Failed to read saved index from localStorage", e);
+    }
+    return 0;
+  });
+
   const [trailerKeys, setTrailerKeys] = useState<Map<number, string | null>>(new Map());
   const fetchingRef = useRef(new Set<number>());
 
-  // Reset index when filters change
+  // Reset index when filters change (localStorage is cleared in useMovies)
   useEffect(() => {
     setCurrentIndex(0);
   }, [filters]);
@@ -63,8 +75,15 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWa
   }, [movies, currentIndex, filters.contentType]);
 
   const handleSwipe = (direction: 'left' | 'right' | 'up', movie: Movie) => {
-    setCurrentIndex(prev => prev + 1);
+    const newIndex = currentIndex + 1;
+    setCurrentIndex(newIndex);
     
+    try {
+      localStorage.setItem('flicksee_swipe_currentIndex', String(newIndex));
+    } catch (e) {
+      console.error("Failed to save swipe index to localStorage", e);
+    }
+
     if (direction === 'right') {
       onLike(movie);
     } else if (direction === 'left') {
@@ -120,6 +139,7 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWa
               contentType={filters.contentType}
               trailerKey={trailerKeys.get(movie.id)}
               recommendation={recommendation}
+              genreMap={genreMap}
             />
           );
         }).reverse()} {/* Reverse to stack them correctly, with the first card (index 0) on top */}

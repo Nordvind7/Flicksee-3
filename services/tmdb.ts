@@ -15,6 +15,7 @@ export const fetchDiscoverContent = async (page: number, filters: FilterState): 
     return data.results.map((item: any) => ({
       ...item,
       title: item.title || item.name,
+      contentType: filters.contentType, // Ensure content type is part of the movie object
     }));
   } catch (error) {
     console.error('Error fetching discover content:', error);

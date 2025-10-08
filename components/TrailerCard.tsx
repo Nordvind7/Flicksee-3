@@ -19,6 +19,7 @@ interface TrailerCardProps {
   contentType: ContentType;
   trailerKey: string | null | undefined; // Added for preloading
   recommendation?: Recommendation;
+  genreMap: Map<number, string>;
 }
 
 const RecommendationBubble: React.FC<{ recommendation: Recommendation }> = ({ recommendation }) => (
@@ -38,10 +39,11 @@ const RecommendationBubble: React.FC<{ recommendation: Recommendation }> = ({ re
     </div>
   );
 
-const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, contentType, trailerKey, recommendation }) => {
+const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, contentType, trailerKey, recommendation, genreMap }) => {
   const isLoading = trailerKey === undefined; // Loading if key is not yet fetched
   const [isMuted, setIsMuted] = useState(true);
   const [ytApiReady, setYtApiReady] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   const playerRef = useRef<any>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -53,6 +55,10 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
   useEffect(() => {
     isActiveRef.current = isActive;
   }, [isActive]);
+  
+  const genreNames = movie.genre_ids
+    .map(id => genreMap.get(id))
+    .filter((name): name is string => !!name);
 
   useEffect(() => {
     if (window.YT && window.YT.Player) {
@@ -200,6 +206,9 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
     }
     setTimeout(() => onSwipe(direction), 500);
   };
+  
+  const overviewText = movie.overview || "Описание отсутствует.";
+  const needsTruncation = overviewText.length > 120;
 
   return (
     <div
@@ -251,7 +260,32 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
                         <StarIcon />
                         <span className="ml-1">{movie.vote_average.toFixed(1)}</span>
                     </div>
-                    <p className="text-sm text-brand-secondary line-clamp-3">{movie.overview || "Описание отсутствует."}</p>
+                    {genreNames.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                            {genreNames.slice(0, 3).map(name => (
+                                <span key={name} className="bg-white/10 text-brand-secondary text-xs font-medium px-2 py-1 rounded-full">
+                                    {name}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                    <div>
+                        <p className={`text-sm text-brand-secondary transition-all ${!isDescriptionExpanded ? 'line-clamp-3' : ''}`}>
+                            {overviewText}
+                        </p>
+                        {needsTruncation && !isDescriptionExpanded && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsDescriptionExpanded(true);
+                                }}
+                                className="text-brand-muted hover:text-white text-sm font-semibold mt-1 bg-transparent border-none p-0 cursor-pointer"
+                                aria-label="Читать полностью"
+                            >
+                                еще
+                            </button>
+                        )}
+                    </div>
                 </div>
                 {recommendation && <RecommendationBubble recommendation={recommendation} />}
             </div>
