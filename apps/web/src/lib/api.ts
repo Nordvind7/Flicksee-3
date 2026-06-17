@@ -13,15 +13,28 @@ export function getAccessToken(): string | null {
   return accessToken;
 }
 
-async function tryRefresh(): Promise<boolean> {
-  const res = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' });
-  if (!res.ok) {
-    accessToken = null;
-    return false;
-  }
-  const data = (await res.json()) as { accessToken: string };
-  accessToken = data.accessToken;
-  return true;
+let refreshing: Promise<boolean> | null = null;
+
+function tryRefresh(): Promise<boolean> {
+  // Single-flight: concurrent 401s share one refresh round-trip so the same
+  // refresh cookie is never presented twice (the server treats reuse of a
+  // rotated token as a breach and revokes the whole session).
+  if (refreshing) return refreshing;
+  refreshing = (async () => {
+    try {
+      const res = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' });
+      if (!res.ok) {
+        accessToken = null;
+        return false;
+      }
+      const data = (await res.json()) as { accessToken: string };
+      accessToken = data.accessToken;
+      return true;
+    } finally {
+      refreshing = null;
+    }
+  })();
+  return refreshing;
 }
 
 async function request(path: string, options: RequestInit = {}, allowRetry = true): Promise<Response> {

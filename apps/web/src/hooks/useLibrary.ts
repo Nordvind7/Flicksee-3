@@ -77,7 +77,8 @@ export function useLibrary(user: AuthUser | null, authLoading: boolean) {
             ]);
             localStorage.removeItem(LS.liked);
             localStorage.removeItem(LS.watched);
-            localStorage.removeItem(LS.disliked);
+            // LS.disliked is id-only (no contentType to send as a swipe); keep
+            // it locally and fold it into the excluded set below instead.
           } catch {
             /* best-effort */
           }
@@ -94,7 +95,10 @@ export function useLibrary(user: AuthUser | null, authLoading: boolean) {
       if (wd.ok) setWatchedMovies(((await wd.json()) as LibraryResponse).items as unknown as Movie[]);
       if (ex.ok) {
         const e = (await ex.json()) as ExcludedIds;
-        setDislikedIds(new Set<number>([...e.movie, ...e.tv]));
+        // Union server-side acted ids with any leftover anonymous dislikes so
+        // those titles stay out of the deck after login.
+        const localDisliked = readLS<number[]>(LS.disliked, []);
+        setDislikedIds(new Set<number>([...e.movie, ...e.tv, ...localDisliked]));
       }
     })();
 

@@ -107,8 +107,8 @@ export default async function authRoutes(app: FastifyInstance) {
   // Dev-only shortcut: skip the Telegram widget (which requires a public
   // domain) and mint a session for a throwaway user. Never registered in
   // production, so it cannot be an auth bypass there.
-  if (config.NODE_ENV === 'development') {
-    app.post('/auth/dev', async (req, reply) => {
+  if (config.NODE_ENV !== 'production' && config.ENABLE_DEV_LOGIN) {
+    app.post('/auth/dev', { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, async (req, reply) => {
       const body = (req.body ?? {}) as Record<string, unknown>;
       const id = Number(body.id);
       const telegramId = BigInt(Number.isInteger(id) ? id : 777000777);

@@ -32,6 +32,7 @@ const LoginButton: React.FC = () => {
 
     return () => {
       host.innerHTML = '';
+      delete (window as unknown as { onTelegramAuth?: unknown }).onTelegramAuth;
     };
   }, [user, login]);
 

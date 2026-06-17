@@ -91,10 +91,13 @@ export default async function libraryRoutes(app: FastifyInstance) {
           releaseDate: content.releaseDate,
           genreIds: content.genreIds ?? [],
         };
+        // Create-only: the Content cache is shared across users, so we never
+        // let one user overwrite another's cached title metadata. (When the
+        // server-side TMDB proxy lands, it becomes the authoritative writer.)
         await tx.content.upsert({
           where: { tmdbId_type: { tmdbId, type: dbType } },
           create: { tmdbId, type: dbType, ...data },
-          update: data,
+          update: {},
         });
       }
       await tx.swipe.upsert({
