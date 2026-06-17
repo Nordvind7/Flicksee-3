@@ -18,7 +18,13 @@ if [ ! -x "$BIN/pg_ctl" ]; then
 fi
 
 case "${1:-status}" in
-  start) "$BIN/pg_ctl" -D "$DATADIR" -l "$LOG" -o "-p $PORT" -w start ;;
+  start)
+    if "$BIN/pg_isready" -q -h /tmp -p "$PORT" 2>/dev/null; then
+      echo "PostgreSQL already running on :$PORT"
+    else
+      "$BIN/pg_ctl" -D "$DATADIR" -l "$LOG" -o "-p $PORT" -w start
+    fi
+    ;;
   stop) "$BIN/pg_ctl" -D "$DATADIR" -w stop ;;
   restart) "$BIN/pg_ctl" -D "$DATADIR" -l "$LOG" -o "-p $PORT" -w restart ;;
   status) "$BIN/pg_ctl" -D "$DATADIR" status ;;

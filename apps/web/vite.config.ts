@@ -12,6 +12,9 @@ export default defineConfig(({ mode }) => {
   return {
     server: {
       port: 3000,
+      // Never silently fall back to another port (e.g. the API's 3001) — fail
+      // loudly so a stale process is obvious instead of causing a port clash.
+      strictPort: true,
       host: '0.0.0.0',
       proxy: {
         // The API serves routes at root (/auth/*, /swipes, …); strip the
