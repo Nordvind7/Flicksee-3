@@ -44,9 +44,3 @@ export interface FilterState {
     contentType: ContentType;
     genres: number[];
 }
-
-export interface Recommendation {
-  name: string;
-  avatarUrl: string;
-  text: string;
-}

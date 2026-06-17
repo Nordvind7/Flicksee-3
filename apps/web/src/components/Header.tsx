@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { HeartIcon, FilmIcon, EyeIcon, FilterIcon, TelegramIcon } from './icons';
+import { HeartIcon, FilmIcon, EyeIcon, FilterIcon } from './icons';
 import FilterModal from './FilterModal';
 import type { FilterState } from '../types';
 
@@ -31,19 +31,11 @@ const NavButton: React.FC<{
 const Header: React.FC<HeaderProps> = ({ currentView, setView, filters, setFilters }) => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
-  const handleTelegramLogin = () => {
-    // Placeholder for Telegram login functionality.
-    // A full implementation requires Telegram's Web App script and backend logic.
-    alert('Функция входа через Telegram в разработке!');
-  };
-
   return (
     <>
       <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-gradient-to-b from-black/70 to-transparent">
         <div className="flex items-center space-x-4">
-          <button onClick={handleTelegramLogin} aria-label="Войти через Telegram">
-             <TelegramIcon />
-          </button>
+          {/* Telegram login button is added in Phase 3 (real Login Widget). */}
           <h1 className="text-2xl font-bold text-brand-primary">Flicksee</h1>
         </div>
         <div className="flex items-center space-x-2">

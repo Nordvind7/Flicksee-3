@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Movie, FilterState } from '../types';
 import { fetchDiscoverContent } from '../services/tmdb';
 
@@ -15,12 +15,19 @@ const areFiltersEqual = (a: FilterState, b: FilterState): boolean => {
   return sortedA.every((value, index) => value === sortedB[index]);
 };
 
-const useMovies = (filters: FilterState) => {
+const useMovies = (filters: FilterState, excludedIds: Set<number> = new Set()) => {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+
+  // Held in a ref so that updating the excluded set on every swipe does not
+  // retrigger the fetch effect — we just read the latest value when fetching.
+  const excludedRef = useRef(excludedIds);
+  useEffect(() => {
+    excludedRef.current = excludedIds;
+  }, [excludedIds]);
 
   // Effect for handling initial load, state restoration, and filter changes.
   useEffect(() => {
@@ -59,7 +66,9 @@ const useMovies = (filters: FilterState) => {
       }
       
       try {
-        const initialMovies = await fetchDiscoverContent(1, filters);
+        const initialMovies = (await fetchDiscoverContent(1, filters)).filter(
+          (m) => !excludedRef.current.has(m.id),
+        );
         if (isMounted) {
           if (initialMovies.length === 0) {
             setHasMore(false);
@@ -100,7 +109,9 @@ const useMovies = (filters: FilterState) => {
     setError(null);
 
     try {
-      const newMovies = await fetchDiscoverContent(page, filters);
+      const newMovies = (await fetchDiscoverContent(page, filters)).filter(
+        (m) => !excludedRef.current.has(m.id),
+      );
       
       if (newMovies.length === 0) {
         setHasMore(false);

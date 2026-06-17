@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import useMovies from '../hooks/useMovies';
 import TrailerCard from './TrailerCard';
-import type { Movie, FilterState, Recommendation } from '../types';
+import type { Movie, FilterState } from '../types';
 import { fetchTrailerKey } from '../services/tmdb';
 import { LoadingIcon } from './icons';
 
@@ -11,20 +11,14 @@ interface SwipeContainerProps {
   onWatched: (movie: Movie) => void;
   filters: FilterState;
   genreMap: Map<number, string>;
+  excludedIds: Set<number>;
 }
 
 const PRELOAD_COUNT = 4;
 const LOAD_MORE_THRESHOLD = 5;
 
-const recommendations: Recommendation[] = [
-    { name: 'Максим Пронин', avatarUrl: 'https://i.postimg.cc/L54sGsJF/2025-08-06-21-59-19.jpg', text: 'прикольный фильм, советую.' },
-    { name: 'Артем Шарипов', avatarUrl: 'https://i.postimg.cc/4y43j3YJ/2025-08-20-02-37-14.jpg', text: 'топ, надо глянуть!' },
-    { name: 'Егор Галий', avatarUrl: 'https://i.postimg.cc/8ckCxC7p/2025-09-30-22-21-54.jpg', text: 'выглядит интересно.' },
-    { name: 'Егор Соколов', avatarUrl: 'https://i.postimg.cc/j2qjBjDt/2025-09-30-22-23-28.jpg', text: 'это мы смотрим.' },
-];
-
-const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWatched, filters, genreMap }) => {
-  const { movies, isLoading, error, loadMoreMovies, hasMore } = useMovies(filters);
+const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWatched, filters, genreMap, excludedIds }) => {
+  const { movies, isLoading, error, loadMoreMovies, hasMore } = useMovies(filters, excludedIds);
   
   const [currentIndex, setCurrentIndex] = useState(() => {
     try {
@@ -121,14 +115,6 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWa
     return (
       <div className="relative w-full h-full flex items-center justify-center">
         {visibleMovies.map((movie, index) => {
-          const absoluteIndex = currentIndex + index;
-          let recommendation: Recommendation | undefined = undefined;
-          // Apply to every second card (1, 3, 5...)
-          if (absoluteIndex > 0 && absoluteIndex % 2 === 1) { 
-            const recIndex = Math.floor((absoluteIndex - 1) / 2) % recommendations.length;
-            recommendation = recommendations[recIndex];
-          }
-
           return (
             <TrailerCard
               key={movie.id}
@@ -138,7 +124,6 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWa
               isActive={index === 0}
               contentType={filters.contentType}
               trailerKey={trailerKeys.get(movie.id)}
-              recommendation={recommendation}
               genreMap={genreMap}
             />
           );

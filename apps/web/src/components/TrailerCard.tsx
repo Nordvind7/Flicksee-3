@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import type { Movie, Recommendation } from '../types';
+import type { Movie } from '../types';
 import { ContentType } from '../types';
 import { TMDB_BACKDROP_BASE_URL } from '../constants';
 import { HeartIcon, XMarkIcon, EyeIcon, StarIcon, MutedIcon, UnmutedIcon } from './icons';
@@ -18,28 +18,10 @@ interface TrailerCardProps {
   isActive: boolean;
   contentType: ContentType;
   trailerKey: string | null | undefined; // Added for preloading
-  recommendation?: Recommendation;
   genreMap: Map<number, string>;
 }
 
-const RecommendationBubble: React.FC<{ recommendation: Recommendation }> = ({ recommendation }) => (
-    <div 
-      className="flex items-center bg-white/10 p-2 rounded-xl shadow-lg animate-levitate animate-fade-in mt-3"
-      style={{ animationDelay: '0.5s' }}
-    >
-      <img 
-        src={recommendation.avatarUrl} 
-        alt={recommendation.name} 
-        className="w-9 h-9 rounded-full object-cover border-2 border-white/50"
-      />
-      <div className="ml-2 mr-1 text-white text-xs">
-        <p className="font-semibold">{recommendation.name}</p>
-        <p className="text-gray-300 -mt-0.5">{recommendation.text}</p>
-      </div>
-    </div>
-  );
-
-const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, contentType, trailerKey, recommendation, genreMap }) => {
+const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, contentType, trailerKey, genreMap }) => {
   const isLoading = trailerKey === undefined; // Loading if key is not yet fetched
   const [isMuted, setIsMuted] = useState(true);
   const [ytApiReady, setYtApiReady] = useState(false);
@@ -287,7 +269,6 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
                         )}
                     </div>
                 </div>
-                {recommendation && <RecommendationBubble recommendation={recommendation} />}
             </div>
 
             <div className="flex justify-around items-center pt-4">

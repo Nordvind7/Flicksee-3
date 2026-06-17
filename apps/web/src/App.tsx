@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import SwipeContainer from './components/SwipeContainer';
 import Header from './components/Header';
 import LikedList from './components/LikedList';
@@ -19,6 +19,7 @@ const YANDEX_METRIKA_ID = 104544058;
 const App: React.FC = () => {
   const [likedMovies, setLikedMovies] = useState<Movie[]>([]);
   const [watchedMovies, setWatchedMovies] = useState<Movie[]>([]);
+  const [dislikedIds, setDislikedIds] = useState<Set<number>>(new Set());
   const [view, setView] = useState<'swipe' | 'liked' | 'watched'>('swipe');
   const [hasInteracted, setHasInteracted] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
@@ -38,6 +39,14 @@ const App: React.FC = () => {
     const storedWatched = localStorage.getItem('flicksee_watched');
     if (storedWatched) {
       setWatchedMovies(JSON.parse(storedWatched));
+    }
+    const storedDisliked = localStorage.getItem('flicksee_disliked');
+    if (storedDisliked) {
+      try {
+        setDislikedIds(new Set<number>(JSON.parse(storedDisliked)));
+      } catch (error) {
+        console.error('Failed to parse disliked ids', error);
+      }
     }
   }, []);
 
@@ -91,7 +100,13 @@ const App: React.FC = () => {
   }, []);
 
   const handleDislike = useCallback((movie: Movie) => {
-    // We can add logic here to prevent seeing this movie again
+    // Remember dislikes so the same title is not shown again on future loads.
+    setDislikedIds((prev) => {
+      const next = new Set(prev);
+      next.add(movie.id);
+      localStorage.setItem('flicksee_disliked', JSON.stringify([...next]));
+      return next;
+    });
   }, []);
 
   const handleWatched = useCallback((movie: Movie) => {
@@ -101,7 +116,15 @@ const App: React.FC = () => {
         return newWatched;
     });
   }, []);
-  
+
+  // Titles already liked, watched, or disliked are excluded from the deck.
+  const excludedIds = useMemo(() => {
+    const ids = new Set<number>(dislikedIds);
+    likedMovies.forEach((m) => ids.add(m.id));
+    watchedMovies.forEach((m) => ids.add(m.id));
+    return ids;
+  }, [dislikedIds, likedMovies, watchedMovies]);
+
   if (!hasInteracted) {
     const title = "Flicksee".split('');
     return (
@@ -144,6 +167,7 @@ const App: React.FC = () => {
               onWatched={handleWatched}
               filters={filters}
               genreMap={genreMap[filters.contentType]}
+              excludedIds={excludedIds}
             />
           </div>
         )}
