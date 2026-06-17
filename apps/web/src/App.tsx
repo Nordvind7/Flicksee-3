@@ -7,6 +7,7 @@ import { ContentType } from './types';
 import { StartIcon } from './components/icons';
 import { fetchGenres } from './services/tmdb';
 import { useAuth } from './auth/AuthContext';
+import { useSound } from './sound/SoundContext';
 import { useLibrary } from './hooks/useLibrary';
 
 // Extend the Window interface for TypeScript to recognize the Yandex Metrika function
@@ -20,6 +21,7 @@ const YANDEX_METRIKA_ID = 104544058;
 
 const App: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
+  const { unlock } = useSound();
   const { likedMovies, watchedMovies, excludedIds, handleLike, handleDislike, handleWatched } =
     useLibrary(user, authLoading);
 
@@ -89,7 +91,11 @@ const App: React.FC = () => {
           Свайпай трейлеры, находи фильмы и сериалы
         </p>
         <button
-          onClick={() => setHasInteracted(true)}
+          onClick={() => {
+            // This tap is the user gesture that unlocks autoplay-with-sound.
+            unlock();
+            setHasInteracted(true);
+          }}
           className="bg-brand-primary text-white font-bold py-4 px-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 animate-fade-in-up animate-pulse-glow"
           style={{ animationDelay: '0.6s' }}
         >

@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import type { Movie } from '../types';
 import { ContentType } from '../types';
 import { TMDB_BACKDROP_BASE_URL } from '../constants';
 import { HeartIcon, XMarkIcon, EyeIcon, StarIcon, MutedIcon, UnmutedIcon } from './icons';
+import { useSound } from '../sound/SoundContext';
 
 declare global {
   interface Window {
@@ -21,9 +21,10 @@ interface TrailerCardProps {
   genreMap: Map<number, string>;
 }
 
-const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, contentType, trailerKey, genreMap }) => {
+const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, trailerKey, genreMap }) => {
   const isLoading = trailerKey === undefined; // Loading if key is not yet fetched
-  const [isMuted, setIsMuted] = useState(true);
+  const { soundOn, setSoundOn, unlocked } = useSound();
+  const [audioBlocked, setAudioBlocked] = useState(false);
   const [ytApiReady, setYtApiReady] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
@@ -33,13 +34,23 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
   const startPos = useRef({ x: 0, y: 0 });
   const currentPos = useRef({ x: 0, y: 0 });
 
+  // Mirror reactive values into refs so the player-creation effect (which must
+  // not re-run on sound changes) can read the latest values.
   const isActiveRef = useRef(isActive);
+  const soundOnRef = useRef(soundOn);
+  const unlockedRef = useRef(unlocked);
   useEffect(() => {
     isActiveRef.current = isActive;
   }, [isActive]);
-  
+  useEffect(() => {
+    soundOnRef.current = soundOn;
+  }, [soundOn]);
+  useEffect(() => {
+    unlockedRef.current = unlocked;
+  }, [unlocked]);
+
   const genreNames = movie.genre_ids
-    .map(id => genreMap.get(id))
+    .map((id) => genreMap.get(id))
     .filter((name): name is string => !!name);
 
   useEffect(() => {
@@ -58,27 +69,46 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
 
   // Create and destroy the YouTube player instance.
   useEffect(() => {
-    // Wait for API, and a valid (non-undefined, non-null) trailer key
     if (!trailerKey || !ytApiReady) {
       return;
     }
 
-    const onPlayerReady = (event: any) => {
-      playerRef.current = event.target;
-      playerRef.current.mute();
-      setIsMuted(true);
-      if (isActiveRef.current) {
-        playerRef.current.playVideo();
+    const wantsSound = () => soundOnRef.current && unlockedRef.current;
+
+    const applySound = () => {
+      const p = playerRef.current;
+      if (!p || typeof p.mute !== 'function') return;
+      if (wantsSound()) {
+        p.unMute();
+        if (typeof p.setVolume === 'function') p.setVolume(100);
+      } else {
+        p.mute();
       }
     };
-    
+
+    const onPlayerReady = (event: any) => {
+      playerRef.current = event.target;
+      if (isActiveRef.current) {
+        applySound();
+        playerRef.current.playVideo();
+        // If the browser refused unmuted autoplay, it keeps the player muted —
+        // detect that shortly after and surface a tap-to-unmute affordance.
+        window.setTimeout(() => {
+          const p = playerRef.current;
+          if (!p || typeof p.isMuted !== 'function') return;
+          setAudioBlocked(wantsSound() && p.isMuted());
+        }, 800);
+      } else {
+        playerRef.current.mute();
+      }
+    };
+
     const onStateChange = (event: any) => {
-        // When video ends, and loop is enabled, it should restart automatically.
-        // This is a backup for some edge cases.
-        if (event.data === window.YT.PlayerState.ENDED) {
-            playerRef.current.seekTo(0);
-        }
-    }
+      // Loop is enabled; this is a backup restart for edge cases.
+      if (event.data === window.YT.PlayerState.ENDED) {
+        playerRef.current?.seekTo(0);
+      }
+    };
 
     const playerElement = cardRef.current?.querySelector(`#player-${movie.id}`);
     if (playerElement && !playerRef.current) {
@@ -86,7 +116,7 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
         videoId: trailerKey,
         playerVars: {
           autoplay: 1,
-          mute: 1,
+          mute: wantsSound() ? 0 : 1,
           controls: 0,
           showinfo: 0,
           rel: 0,
@@ -95,7 +125,8 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
           loop: 1,
           playlist: trailerKey,
           fs: 0,
-          origin: window.location.origin, // Critical for deployed apps
+          playsinline: 1, // play inline on iOS instead of going fullscreen
+          origin: window.location.origin,
         },
         events: {
           onReady: onPlayerReady,
@@ -112,28 +143,58 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
     };
   }, [trailerKey, ytApiReady, movie.id]);
 
+  // Play/pause + (re)apply sound as the active card changes.
   useEffect(() => {
-    if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
-      if (isActive) {
-        playerRef.current.playVideo();
+    const p = playerRef.current;
+    if (!p || typeof p.playVideo !== 'function') return;
+    if (isActive) {
+      if (soundOnRef.current && unlockedRef.current) {
+        p.unMute();
+        if (typeof p.setVolume === 'function') p.setVolume(100);
       } else {
-        playerRef.current.pauseVideo();
+        p.mute();
       }
+      p.playVideo();
+    } else {
+      p.pauseVideo();
     }
   }, [isActive]);
 
-
-  const toggleMute = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const player = playerRef.current;
-    if (!player || typeof player.isMuted !== 'function') return;
-
-    if (player.isMuted()) {
-        player.unMute();
-        setIsMuted(false);
+  // React to the session-wide sound preference on the active card.
+  useEffect(() => {
+    const p = playerRef.current;
+    if (!isActive || !p || typeof p.mute !== 'function') return;
+    if (soundOn && unlocked) {
+      p.unMute();
+      if (typeof p.setVolume === 'function') p.setVolume(100);
+      p.playVideo();
     } else {
-        player.mute();
-        setIsMuted(true);
+      p.mute();
+    }
+    setAudioBlocked(false);
+  }, [soundOn, unlocked, isActive]);
+
+  // Turn sound on from within a user gesture — the reliable way to defeat
+  // autoplay blocking.
+  const enableSoundFromGesture = () => {
+    const p = playerRef.current;
+    if (p && typeof p.unMute === 'function') {
+      p.unMute();
+      if (typeof p.setVolume === 'function') p.setVolume(100);
+      p.playVideo();
+    }
+    setAudioBlocked(false);
+    setSoundOn(true);
+  };
+
+  const toggleSound = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (soundOn && !audioBlocked) {
+      const p = playerRef.current;
+      if (p && typeof p.mute === 'function') p.mute();
+      setSoundOn(false);
+    } else {
+      enableSoundFromGesture();
     }
   };
 
@@ -157,7 +218,7 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
     if (!isDragging.current || !cardRef.current) return;
     isDragging.current = false;
     cardRef.current.style.transition = 'transform 0.3s ease-out';
-    
+
     const { x, y } = currentPos.current;
     const swipeThreshold = window.innerWidth / 4;
 
@@ -167,9 +228,9 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
       cardRef.current.style.transform = `translate(${moveOutX}px, ${y}px) rotate(${x * 0.1}deg)`;
       setTimeout(() => onSwipe(direction), 300);
     } else if (y < -swipeThreshold) {
-        const moveOutY = -(window.innerHeight + 200);
-        cardRef.current.style.transform = `translate(${x}px, ${moveOutY}px) rotate(0deg)`;
-        setTimeout(() => onSwipe('up'), 300);
+      const moveOutY = -(window.innerHeight + 200);
+      cardRef.current.style.transform = `translate(${x}px, ${moveOutY}px) rotate(0deg)`;
+      setTimeout(() => onSwipe('up'), 300);
     } else {
       cardRef.current.style.transform = 'translate(0, 0) rotate(0)';
     }
@@ -180,17 +241,18 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
     if (!cardRef.current) return;
     cardRef.current.style.transition = 'transform 0.5s ease-out';
     if (direction === 'left') {
-        cardRef.current.style.transform = `translate(-${window.innerWidth + 200}px, -50px) rotate(-30deg)`;
+      cardRef.current.style.transform = `translate(-${window.innerWidth + 200}px, -50px) rotate(-30deg)`;
     } else if (direction === 'right') {
-        cardRef.current.style.transform = `translate(${window.innerWidth + 200}px, -50px) rotate(30deg)`;
+      cardRef.current.style.transform = `translate(${window.innerWidth + 200}px, -50px) rotate(30deg)`;
     } else if (direction === 'up') {
-        cardRef.current.style.transform = `translate(0, -${window.innerHeight + 200}px)`;
+      cardRef.current.style.transform = `translate(0, -${window.innerHeight + 200}px)`;
     }
     setTimeout(() => onSwipe(direction), 500);
   };
-  
-  const overviewText = movie.overview || "Описание отсутствует.";
+
+  const overviewText = movie.overview || 'Описание отсутствует.';
   const needsTruncation = overviewText.length > 120;
+  const soundActive = soundOn && !audioBlocked;
 
   return (
     <div
@@ -207,75 +269,106 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
     >
       <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl bg-brand-surface flex flex-col">
         <div className="w-full aspect-video bg-black flex items-center justify-center relative">
-            {isLoading && <p className="text-brand-muted">Загрузка трейлера...</p>}
-            {!isLoading && trailerKey && (
-              <>
-                <div id={`player-${movie.id}`} className="w-full h-full"></div>
-                {isActive && (
-                   <button
-                    onClick={toggleMute}
-                    className="absolute bottom-4 right-4 z-10 bg-black/50 rounded-full p-2 text-white hover:bg-black/75 transition-colors"
-                    aria-label={isMuted ? "Включить звук" : "Выключить звук"}
+          {isLoading && <p className="text-brand-muted">Загрузка трейлера...</p>}
+          {!isLoading && trailerKey && (
+            <>
+              <div id={`player-${movie.id}`} className="w-full h-full"></div>
+              {isActive && audioBlocked && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    enableSoundFromGesture();
+                  }}
+                  className="absolute inset-0 z-20 flex items-center justify-center bg-black/40"
+                  aria-label="Включить звук"
+                >
+                  <span className="flex items-center gap-2 bg-black/70 px-4 py-2 rounded-full text-white text-sm font-medium">
+                    <UnmutedIcon /> Нажмите для звука
+                  </span>
+                </button>
+              )}
+              {isActive && (
+                <button
+                  onClick={toggleSound}
+                  className="absolute bottom-4 right-4 z-30 bg-black/50 rounded-full p-2 text-white hover:bg-black/75 transition-colors"
+                  aria-label={soundActive ? 'Выключить звук' : 'Включить звук'}
+                >
+                  {soundActive ? <UnmutedIcon /> : <MutedIcon />}
+                </button>
+              )}
+            </>
+          )}
+          {!isLoading && !trailerKey && (
+            <div className="w-full h-full relative">
+              <img
+                src={`${TMDB_BACKDROP_BASE_URL}${movie.backdrop_path}`}
+                alt={movie.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-center p-4">
+                <p className="text-brand-muted">Трейлер не найден.</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex-grow p-4 flex flex-col justify-between bg-brand-surface">
+          <div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold truncate">{movie.title}</h2>
+              <div className="flex items-center text-sm text-brand-muted">
+                <span>{movie.release_date?.substring(0, 4) || movie.first_air_date?.substring(0, 4)}</span>
+                <span className="mx-2">•</span>
+                <StarIcon />
+                <span className="ml-1">{movie.vote_average.toFixed(1)}</span>
+              </div>
+              {genreNames.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {genreNames.slice(0, 3).map((name) => (
+                    <span
+                      key={name}
+                      className="bg-white/10 text-brand-secondary text-xs font-medium px-2 py-1 rounded-full"
+                    >
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div>
+                <p
+                  className={`text-sm text-brand-secondary transition-all ${
+                    !isDescriptionExpanded ? 'line-clamp-3' : ''
+                  }`}
+                >
+                  {overviewText}
+                </p>
+                {needsTruncation && !isDescriptionExpanded && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsDescriptionExpanded(true);
+                    }}
+                    className="text-brand-muted hover:text-white text-sm font-semibold mt-1 bg-transparent border-none p-0 cursor-pointer"
+                    aria-label="Читать полностью"
                   >
-                    {isMuted ? <MutedIcon /> : <UnmutedIcon />}
+                    еще
                   </button>
                 )}
-              </>
-            )}
-            {!isLoading && !trailerKey && (
-                 <div className="w-full h-full relative">
-                    <img src={`${TMDB_BACKDROP_BASE_URL}${movie.backdrop_path}`} alt={movie.title} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-center p-4">
-                        <p className="text-brand-muted">Трейлер не найден.</p>
-                    </div>
-                </div>
-            )}
-        </div>
-        
-        <div className="flex-grow p-4 flex flex-col justify-between bg-brand-surface">
-            <div>
-                <div className="space-y-2">
-                    <h2 className="text-2xl font-bold truncate">{movie.title}</h2>
-                    <div className="flex items-center text-sm text-brand-muted">
-                        <span>{movie.release_date?.substring(0,4) || movie.first_air_date?.substring(0,4)}</span>
-                        <span className="mx-2">•</span>
-                        <StarIcon />
-                        <span className="ml-1">{movie.vote_average.toFixed(1)}</span>
-                    </div>
-                    {genreNames.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                            {genreNames.slice(0, 3).map(name => (
-                                <span key={name} className="bg-white/10 text-brand-secondary text-xs font-medium px-2 py-1 rounded-full">
-                                    {name}
-                                </span>
-                            ))}
-                        </div>
-                    )}
-                    <div>
-                        <p className={`text-sm text-brand-secondary transition-all ${!isDescriptionExpanded ? 'line-clamp-3' : ''}`}>
-                            {overviewText}
-                        </p>
-                        {needsTruncation && !isDescriptionExpanded && (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setIsDescriptionExpanded(true);
-                                }}
-                                className="text-brand-muted hover:text-white text-sm font-semibold mt-1 bg-transparent border-none p-0 cursor-pointer"
-                                aria-label="Читать полностью"
-                            >
-                                еще
-                            </button>
-                        )}
-                    </div>
-                </div>
+              </div>
             </div>
+          </div>
 
-            <div className="flex justify-around items-center pt-4">
-                <ActionButton onClick={() => triggerSwipe('left')} ariaLabel="Не нравится"><XMarkIcon /></ActionButton>
-                <ActionButton onClick={() => triggerSwipe('up')} ariaLabel="Смотрел"><EyeIcon /></ActionButton>
-                <ActionButton onClick={() => triggerSwipe('right')} ariaLabel="Нравится" isPrimary><HeartIcon /></ActionButton>
-            </div>
+          <div className="flex justify-around items-center pt-4">
+            <ActionButton onClick={() => triggerSwipe('left')} ariaLabel="Не нравится">
+              <XMarkIcon />
+            </ActionButton>
+            <ActionButton onClick={() => triggerSwipe('up')} ariaLabel="Смотрел">
+              <EyeIcon />
+            </ActionButton>
+            <ActionButton onClick={() => triggerSwipe('right')} ariaLabel="Нравится" isPrimary>
+              <HeartIcon />
+            </ActionButton>
+          </div>
         </div>
       </div>
     </div>
@@ -283,24 +376,23 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, con
 };
 
 const ActionButton: React.FC<{
-    onClick: () => void;
-    children: React.ReactNode;
-    ariaLabel: string;
-    isPrimary?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  ariaLabel: string;
+  isPrimary?: boolean;
 }> = ({ onClick, children, ariaLabel, isPrimary }) => (
-    <button
-        onClick={onClick}
-        aria-label={ariaLabel}
-        className={`rounded-full p-4 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-110
-            ${isPrimary 
-                ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/40 w-20 h-20' 
+  <button
+    onClick={onClick}
+    aria-label={ariaLabel}
+    className={`rounded-full p-4 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-110
+            ${
+              isPrimary
+                ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/40 w-20 h-20'
                 : 'bg-white/10 text-white w-16 h-16 hover:bg-white/20'
-            }`
-        }
-    >
-        {children}
-    </button>
+            }`}
+  >
+    {children}
+  </button>
 );
-
 
 export default TrailerCard;
