@@ -55,4 +55,27 @@ pnpm dev:api
 - **Авторизация:** Telegram Login Widget → собственный JWT.
 - **Аналитика:** Яндекс.Метрика.
 
-> Локальная БД для разработки — [Postgres.app](https://postgresapp.com/).
+## База данных
+
+PostgreSQL + Prisma. Схема — [`apps/api/prisma/schema.prisma`](apps/api/prisma/schema.prisma).
+Локальная БД для разработки — [Postgres.app](https://postgresapp.com/).
+
+**Первый запуск (после установки и старта Postgres.app):**
+
+```bash
+cd apps/api
+cp .env.example .env       # вписать DATABASE_URL (свой mac-юзер) и JWT_SECRET
+pnpm db:deploy             # применить миграции — создаёт БД flicksee и все таблицы
+```
+
+`pnpm db:studio` — GUI к данным · `pnpm db:migrate --name <name>` — новая миграция после правок схемы.
+
+### Модель данных
+
+| Таблица | Назначение |
+| --- | --- |
+| `User` | Telegram-пользователь (telegramId, профиль, флаг старта бота) |
+| `RefreshToken` | refresh-токены своего JWT (хранится только хэш) |
+| `Content` | кэш TMDB (трейлер, постеры, RU-провайдеры) по `(tmdbId, type)` |
+| `Swipe` | личные свайпы LIKE/DISLIKE/SEEN — одна запись на `(user, title)` |
+| `Room` · `RoomMember` · `RoomSwipe` · `Match` | совместные сеансы и матчи с друзьями |
