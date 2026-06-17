@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { HeartIcon, FilmIcon, EyeIcon, FilterIcon } from './icons';
 import FilterModal from './FilterModal';
+import LoginButton from './LoginButton';
 import type { FilterState } from '../types';
 
 interface HeaderProps {
@@ -34,9 +35,9 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView, filters, setFilte
   return (
     <>
       <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-gradient-to-b from-black/70 to-transparent">
-        <div className="flex items-center space-x-4">
-          {/* Telegram login button is added in Phase 3 (real Login Widget). */}
+        <div className="flex items-center space-x-3">
           <h1 className="text-2xl font-bold text-brand-primary">Flicksee</h1>
+          <LoginButton />
         </div>
         <div className="flex items-center space-x-2">
            <NavButton

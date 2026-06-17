@@ -18,7 +18,8 @@
     "pg:start": "bash scripts/pg.sh start",
     "pg:stop": "bash scripts/pg.sh stop",
     "pg:status": "bash scripts/pg.sh status",
-    "verify:auth": "tsx scripts/verify-auth.ts"
+    "verify:auth": "tsx scripts/verify-auth.ts",
+    "verify:library": "tsx scripts/verify-library.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",

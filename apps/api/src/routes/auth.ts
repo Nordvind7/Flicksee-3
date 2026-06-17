@@ -103,4 +103,34 @@ export default async function authRoutes(app: FastifyInstance) {
     const user = await prisma.user.findUnique({ where: { id: req.user.sub } });
     return { user: user ? toAuthUser(user) : null };
   });
+
+  // Dev-only shortcut: skip the Telegram widget (which requires a public
+  // domain) and mint a session for a throwaway user. Never registered in
+  // production, so it cannot be an auth bypass there.
+  if (config.NODE_ENV === 'development') {
+    app.post('/auth/dev', async (req, reply) => {
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const id = Number(body.id);
+      const telegramId = BigInt(Number.isInteger(id) ? id : 777000777);
+      const user = await prisma.user.upsert({
+        where: { telegramId },
+        create: {
+          telegramId,
+          username: str(body.username) ?? 'dev_user',
+          firstName: str(body.firstName) ?? 'Dev',
+        },
+        update: { lastSeenAt: new Date() },
+      });
+      const accessToken = await reply.jwtSign({ sub: user.id }, {
+        expiresIn: config.ACCESS_TOKEN_TTL,
+      });
+      const refresh = await issueRefreshToken(user.id, {
+        userAgent: req.headers['user-agent'],
+        ip: req.ip,
+      });
+      setRefreshCookie(reply, refresh.token, refresh.expiresAt);
+      req.log.warn('DEV login used (development only)');
+      return { accessToken, user: toAuthUser(user) };
+    });
+  }
 }

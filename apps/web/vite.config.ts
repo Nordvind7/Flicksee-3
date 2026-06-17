@@ -14,7 +14,13 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       host: '0.0.0.0',
       proxy: {
-        '/api': { target: apiTarget, changeOrigin: true },
+        // The API serves routes at root (/auth/*, /swipes, …); strip the
+        // /api prefix the client uses so it lands correctly.
+        '/api': {
+          target: apiTarget,
+          changeOrigin: true,
+          rewrite: (p) => p.replace(/^\/api/, ''),
+        },
       },
     },
     plugins: [react()],

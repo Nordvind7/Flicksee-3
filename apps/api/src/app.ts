@@ -7,6 +7,7 @@ import { config } from './config';
 import { prisma } from './db';
 import authPlugin from './auth/plugin';
 import authRoutes from './routes/auth';
+import libraryRoutes from './routes/library';
 
 export interface BuildAppOptions {
   logger?: boolean;
@@ -65,6 +66,7 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
   });
 
   await app.register(authRoutes);
+  await app.register(libraryRoutes);
 
   return app;
 }
