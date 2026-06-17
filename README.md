@@ -60,15 +60,25 @@ pnpm dev:api
 PostgreSQL + Prisma. Схема — [`apps/api/prisma/schema.prisma`](apps/api/prisma/schema.prisma).
 Локальная БД для разработки — [Postgres.app](https://postgresapp.com/).
 
-**Первый запуск (после установки и старта Postgres.app):**
+**Локальный сервер.** PostgreSQL 16 (Postgres.app) установлен и инициализирован; БД
+`flicksee` создана и миграции применены. GUI Postgres.app требует macOS 14, поэтому
+на Monterey сервером управляем из терминала:
 
 ```bash
 cd apps/api
-cp .env.example .env       # вписать DATABASE_URL (свой mac-юзер) и JWT_SECRET
-pnpm db:deploy             # применить миграции — создаёт БД flicksee и все таблицы
+pnpm pg:start     # запустить локальный Postgres (:5432)
+pnpm pg:stop      # остановить
+pnpm pg:status    # статус
 ```
 
-`pnpm db:studio` — GUI к данным · `pnpm db:migrate --name <name>` — новая миграция после правок схемы.
+**Миграции:**
+
+```bash
+cd apps/api
+pnpm db:deploy            # применить миграции (на чистой БД)
+pnpm db:migrate --name x  # создать новую миграцию после правок схемы
+pnpm db:studio            # GUI-просмотр данных
+```
 
 ### Модель данных
 

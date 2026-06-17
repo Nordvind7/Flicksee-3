@@ -14,7 +14,10 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "db:reset": "prisma migrate reset"
+    "db:reset": "prisma migrate reset",
+    "pg:start": "bash scripts/pg.sh start",
+    "pg:stop": "bash scripts/pg.sh stop",
+    "pg:status": "bash scripts/pg.sh status"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",
