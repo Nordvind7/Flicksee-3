@@ -1,6 +1,4 @@
 // Shared domain + API-contract types used by both the web client and the API.
-// Phase 2 will migrate the full domain model (Movie, Genre, …) here so the
-// client and server share one source of truth. For now this proves the wiring.
 
 export const APP_NAME = 'Flicksee';
 
@@ -13,6 +11,22 @@ export interface AuthUser {
   username?: string;
   firstName?: string;
   photoUrl?: string;
+}
+
+/** Response of POST /auth/telegram. */
+export interface AuthResponse {
+  accessToken: string;
+  user: AuthUser;
+}
+
+/** Response of POST /auth/refresh. */
+export interface RefreshResponse {
+  accessToken: string;
+}
+
+/** Response of GET /auth/me. */
+export interface MeResponse {
+  user: AuthUser | null;
 }
 
 /** Standard error envelope returned by the API. */
