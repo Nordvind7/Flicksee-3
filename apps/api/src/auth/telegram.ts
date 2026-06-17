@@ -7,6 +7,7 @@ export interface VerifyResult {
 }
 
 const MAX_AUTH_AGE_SECONDS = 86_400; // reject logins older than 24h (replay guard)
+const CLOCK_SKEW_SECONDS = 60; // tolerance for future-dated auth_date
 
 // Verifies a Telegram Login Widget payload.
 // https://core.telegram.org/widgets/login#checking-authorization
@@ -46,7 +47,11 @@ export function verifyTelegramLogin(
   if (!Number.isFinite(authDate)) {
     return { ok: false, reason: 'missing auth_date' };
   }
-  if (Date.now() / 1000 - authDate > MAX_AUTH_AGE_SECONDS) {
+  const ageSeconds = Date.now() / 1000 - authDate;
+  if (ageSeconds < -CLOCK_SKEW_SECONDS) {
+    return { ok: false, reason: 'auth_date in future' };
+  }
+  if (ageSeconds > MAX_AUTH_AGE_SECONDS) {
     return { ok: false, reason: 'auth_date expired' };
   }
 

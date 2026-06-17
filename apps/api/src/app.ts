@@ -1,6 +1,9 @@
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
+import rateLimit from '@fastify/rate-limit';
 import { APP_NAME } from '@flicksee/shared';
+import { config } from './config';
 import { prisma } from './db';
 import authPlugin from './auth/plugin';
 import authRoutes from './routes/auth';
@@ -9,13 +12,39 @@ export interface BuildAppOptions {
   logger?: boolean;
 }
 
+// Browser origins allowed to make credentialed CORS calls in dev. In
+// production the web app proxies /api same-origin and config.WEB_ORIGIN is the
+// only allowed cross-origin caller.
+const DEV_ORIGINS = ['http://localhost:3000', 'http://localhost:5173'];
+
 // Assembles the Fastify app with all plugins and routes. Kept separate from
 // server start-up so tests can drive it in-process via `app.inject()`.
 export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInstance> {
-  const app = Fastify({ logger: opts.logger ?? true });
+  const app = Fastify({
+    logger: opts.logger ?? true,
+    bodyLimit: 64 * 1024, // 64 KB — payloads here are small JSON objects
+  });
 
-  await app.register(cors, { origin: true, credentials: true });
+  await app.register(helmet);
+  await app.register(rateLimit, { max: 100, timeWindow: '1 minute' });
+  await app.register(cors, {
+    origin:
+      config.NODE_ENV === 'production'
+        ? config.WEB_ORIGIN
+          ? [config.WEB_ORIGIN]
+          : false
+        : DEV_ORIGINS,
+    credentials: true,
+  });
   await app.register(authPlugin);
+
+  // Sanitized error handler — never leak internals/stack traces on 5xx.
+  app.setErrorHandler((err: FastifyError, req, reply) => {
+    req.log.error(err);
+    const status =
+      typeof err.statusCode === 'number' && err.statusCode >= 400 ? err.statusCode : 500;
+    reply.status(status).send({ error: status >= 500 ? 'internal server error' : err.message });
+  });
 
   // Liveness.
   app.get('/health', async () => ({

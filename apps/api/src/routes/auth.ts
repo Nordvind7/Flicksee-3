@@ -34,14 +34,20 @@ function setRefreshCookie(reply: FastifyReply, token: string, expiresAt: Date) {
 
 export default async function authRoutes(app: FastifyInstance) {
   // Exchange a verified Telegram Login Widget payload for our tokens.
-  app.post('/auth/telegram', async (req, reply) => {
+  app.post('/auth/telegram', { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, async (req, reply) => {
     const data = (req.body ?? {}) as Record<string, unknown>;
     const result = verifyTelegramLogin(data);
     if (!result.ok) {
-      return reply.status(401).send({ error: `telegram auth failed: ${result.reason}` });
+      // Log the precise reason server-side; tell the client only that it failed.
+      req.log.warn({ reason: result.reason }, 'telegram auth rejected');
+      return reply.status(401).send({ error: 'telegram auth failed' });
     }
 
-    const telegramId = BigInt(Math.trunc(Number(data.id)));
+    const idValue = typeof data.id === 'number' ? data.id : Number(data.id);
+    if (!Number.isInteger(idValue)) {
+      return reply.status(400).send({ error: 'invalid payload' });
+    }
+    const telegramId = BigInt(idValue);
     const profile = {
       username: str(data.username),
       firstName: str(data.first_name),
@@ -65,7 +71,7 @@ export default async function authRoutes(app: FastifyInstance) {
   });
 
   // Rotate the refresh-token cookie and mint a fresh access token.
-  app.post('/auth/refresh', async (req, reply) => {
+  app.post('/auth/refresh', { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } }, async (req, reply) => {
     const token = req.cookies[REFRESH_COOKIE];
     if (!token) return reply.status(401).send({ error: 'no refresh token' });
 

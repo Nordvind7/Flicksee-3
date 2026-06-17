@@ -42,8 +42,13 @@ export async function issueRefreshToken(
   return { token, expiresAt };
 }
 
+// Thrown internally when a concurrent request already rotated the token.
+class RotationConflict extends Error {}
+
 // Validates and rotates a refresh token (revoke the old, mint a new one) in a
-// single transaction. Returns null if the token is unknown, revoked, or expired.
+// single transaction. Returns null if the token is unknown, expired, or lost a
+// concurrent rotation race. If an already-revoked token is replayed — a signal
+// of theft — every active token for that user is revoked as a breach response.
 export async function rotateRefreshToken(
   token: string,
   meta: TokenMeta,
@@ -51,35 +56,59 @@ export async function rotateRefreshToken(
   const existing = await prisma.refreshToken.findUnique({
     where: { tokenHash: hashToken(token) },
   });
-  if (!existing || existing.revokedAt || existing.expiresAt < new Date()) {
+  if (!existing || existing.expiresAt < new Date()) {
+    return null;
+  }
+  // Reuse detection: a rotated (revoked) token presented again is treated as a
+  // compromise — revoke the whole user's active sessions.
+  if (existing.revokedAt) {
+    await revokeAllForUser(existing.userId);
     return null;
   }
 
-  const next = await prisma.$transaction(async (tx) => {
-    await tx.refreshToken.update({
-      where: { id: existing.id },
-      data: { revokedAt: new Date() },
+  try {
+    const next = await prisma.$transaction(async (tx) => {
+      // Compare-and-swap: only the first concurrent request flips revokedAt
+      // from null, so a single token can never mint two live successors.
+      const swap = await tx.refreshToken.updateMany({
+        where: { id: existing.id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      if (swap.count === 0) {
+        throw new RotationConflict();
+      }
+      const newToken = newOpaqueToken();
+      const expiresAt = refreshExpiry();
+      await tx.refreshToken.create({
+        data: {
+          userId: existing.userId,
+          tokenHash: hashToken(newToken),
+          expiresAt,
+          userAgent: meta.userAgent,
+          ip: meta.ip,
+        },
+      });
+      return { token: newToken, expiresAt };
     });
-    const newToken = newOpaqueToken();
-    const expiresAt = refreshExpiry();
-    await tx.refreshToken.create({
-      data: {
-        userId: existing.userId,
-        tokenHash: hashToken(newToken),
-        expiresAt,
-        userAgent: meta.userAgent,
-        ip: meta.ip,
-      },
-    });
-    return { token: newToken, expiresAt };
-  });
-
-  return { ...next, userId: existing.userId };
+    return { ...next, userId: existing.userId };
+  } catch (err) {
+    if (err instanceof RotationConflict) return null;
+    throw err;
+  }
 }
 
 export async function revokeRefreshToken(token: string): Promise<void> {
   await prisma.refreshToken.updateMany({
     where: { tokenHash: hashToken(token), revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+}
+
+// Revokes every active refresh token for a user (logout-everywhere / breach
+// containment).
+export async function revokeAllForUser(userId: string): Promise<void> {
+  await prisma.refreshToken.updateMany({
+    where: { userId, revokedAt: null },
     data: { revokedAt: new Date() },
   });
 }

@@ -11,6 +11,8 @@ const schema = z.object({
   TMDB_API_KEY: z.string().min(1),
   TELEGRAM_BOT_TOKEN: z.string().min(1),
   TELEGRAM_BOT_USERNAME: z.string().min(1),
+  // Trusted browser origin for credentialed CORS in production.
+  WEB_ORIGIN: z.string().url().optional(),
   // Access token lifetime (any vercel/ms duration string).
   ACCESS_TOKEN_TTL: z.string().default('15m'),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
