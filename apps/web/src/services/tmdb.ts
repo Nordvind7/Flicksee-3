@@ -1,8 +1,9 @@
-import { TMDB_API_BASE_URL, TMDB_API_KEY } from '../constants';
+import { TMDB_API_BASE_URL } from '../constants';
 import type { Movie, VideosResponse, Genre, FilterState } from '../types';
 import { ContentType, VideoResult } from '../types';
 
-const BASE_PARAMS = `api_key=${TMDB_API_KEY}&language=ru-RU`;
+// api_key is added by the server-side proxy; the client only controls language.
+const BASE_PARAMS = `language=ru-RU`;
 
 export const fetchDiscoverContent = async (page: number, filters: FilterState): Promise<Movie[]> => {
   try {
@@ -46,7 +47,7 @@ export const fetchTrailerKey = async (id: number, contentType: ContentType): Pro
 
     // 2. Fallback: Fetch videos in any language (primarily English)
     console.log(`No Russian trailer for ${contentType} ID ${id}. Fetching any language as a fallback.`);
-    const responseAny = await fetch(`${TMDB_API_BASE_URL}/${contentType}/${id}/videos?api_key=${TMDB_API_KEY}`);
+    const responseAny = await fetch(`${TMDB_API_BASE_URL}/${contentType}/${id}/videos`);
     if (responseAny.ok) {
         const dataAny: VideosResponse = await responseAny.json();
         const trailer = findBestTrailer(dataAny.results);
