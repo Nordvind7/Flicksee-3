@@ -24,6 +24,10 @@ const schema = z.object({
     .string()
     .optional()
     .transform((v) => v === 'true'),
+  // Phase 7 — friends & matches
+  TELEGRAM_BOT_WEBHOOK_SECRET: z.string().min(16).optional(),
+  WEB_PUBLIC_URL: z.string().url().default('http://localhost:3000'),
+  BOT_MODE: z.enum(['polling', 'webhook']).default('polling'),
 });
 
 const parsed = schema.safeParse(process.env);
@@ -40,6 +44,13 @@ export const config = parsed.data;
 // Belt-and-braces: the dev auth bypass can never be active in production.
 if (config.NODE_ENV === 'production' && config.ENABLE_DEV_LOGIN) {
   throw new Error('ENABLE_DEV_LOGIN must not be enabled when NODE_ENV=production');
+}
+if (
+  config.NODE_ENV === 'production' &&
+  config.BOT_MODE === 'webhook' &&
+  !config.TELEGRAM_BOT_WEBHOOK_SECRET
+) {
+  throw new Error('TELEGRAM_BOT_WEBHOOK_SECRET is required when BOT_MODE=webhook in production');
 }
 
 export type Config = typeof config;
