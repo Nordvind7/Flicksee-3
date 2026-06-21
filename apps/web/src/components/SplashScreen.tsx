@@ -21,14 +21,13 @@ async function fetchPopularPosters(): Promise<string[]> {
   }
 }
 
-// Rotates every ~2.5s through the value props. First impression should
+// Rotates every ~2.6s through the value props. First impression should
 // answer "what is this and why should I tap?" within the first sentence.
 const ROTATOR = [
   'Трейлеры со звуком — в один тап',
   'Матчи с друзьями — автоматически',
-  'Где смотреть в России — сразу видно',
 ];
-const ROTATOR_INTERVAL_MS = 2800;
+const ROTATOR_INTERVAL_MS = 2600;
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ onStart }) => {
   const [posters, setPosters] = useState<string[]>([]);
@@ -61,19 +60,23 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onStart }) => {
     const el = parallaxRef.current;
     if (!el) return;
     let frame = 0;
-    const onMove = (e: MouseEvent) => {
+    const onMove = (e: PointerEvent) => {
       if (frame) return;
       frame = window.requestAnimationFrame(() => {
         frame = 0;
-        const x = e.clientX / window.innerWidth - 0.5; // −0.5 .. +0.5
-        const y = e.clientY / window.innerHeight - 0.5;
+        // Counter-direction: wall pushes AGAINST the cursor → reads as depth,
+        // not as the cursor "carrying" the wall. Magnitudes amplified so the
+        // motion is unmistakable rather than subliminal.
+        const x = -(e.clientX / window.innerWidth - 0.5); // −0.5 .. +0.5 (inverted)
+        const y = -(e.clientY / window.innerHeight - 0.5);
         el.style.setProperty('--mx', String(x));
         el.style.setProperty('--my', String(y));
       });
     };
-    window.addEventListener('mousemove', onMove, { passive: true });
+    // Pointer events fire on both mouse + touch + pen — better than mousemove.
+    window.addEventListener('pointermove', onMove, { passive: true });
     return () => {
-      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('pointermove', onMove);
       if (frame) cancelAnimationFrame(frame);
     };
   }, []);
@@ -140,10 +143,10 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onStart }) => {
       />
 
       {/* Hero content. */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-md">
+      <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-2xl">
         <h1
-          className="text-6xl md:text-7xl font-black text-brand-primary mb-1 flicksee-title tracking-tight"
-          style={{ textShadow: '0 0 40px rgba(229,9,20,0.45), 0 0 80px rgba(229,9,20,0.25)' }}
+          className="text-4xl md:text-5xl font-black text-brand-primary mb-2 flicksee-title tracking-tight"
+          style={{ textShadow: '0 0 40px rgba(229,9,20,0.55), 0 0 90px rgba(229,9,20,0.3)' }}
           aria-label="Flicksee"
         >
           {title.map((char, index) => (
@@ -154,22 +157,29 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onStart }) => {
         </h1>
 
         <p
-          className="text-3xl md:text-4xl font-bold mt-6 mb-4 leading-tight animate-fade-in-up"
+          className="text-5xl md:text-7xl font-black mt-4 mb-5 leading-[1.05] tracking-tight animate-fade-in-up"
           style={{ animationDelay: '0.4s' }}
         >
-          Что посмотреть{' '}
-          <span className="text-brand-primary">сегодня?</span>
+          Что смотрим{' '}
+          <span
+            className="bg-gradient-to-r from-red-500 via-red-400 to-orange-400 bg-clip-text text-transparent"
+            style={{
+              filter: 'drop-shadow(0 0 24px rgba(239,68,68,0.45))',
+            }}
+          >
+            сегодня?
+          </span>
         </p>
 
-        {/* Rotator: cycles three value props. The fixed-height wrapper avoids
+        {/* Rotator: cycles value props. The fixed-height wrapper avoids
             layout jitter as text changes. */}
         <div
-          className="h-7 mb-8 overflow-hidden animate-fade-in-up"
+          className="h-8 mb-10 overflow-hidden animate-fade-in-up"
           style={{ animationDelay: '0.65s' }}
         >
           <p
             key={rotatorIndex}
-            className="text-base md:text-lg text-brand-muted splash-rotator"
+            className="text-lg md:text-xl text-neutral-300 splash-rotator font-medium"
           >
             {ROTATOR[rotatorIndex]}
           </p>
@@ -177,15 +187,18 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onStart }) => {
 
         <button
           onClick={onStart}
-          className="group relative inline-flex items-center gap-2 bg-brand-primary text-white font-bold py-4 px-10 rounded-full transition-all duration-300 hover:scale-105 hover:shadow-2xl animate-fade-in-up animate-pulse-glow"
+          className="group relative inline-flex items-center gap-3 bg-brand-primary text-white font-bold py-5 px-12 rounded-full transition-all duration-300 hover:scale-[1.04] hover:shadow-2xl animate-fade-in-up animate-pulse-glow overflow-hidden"
           style={{
             animationDelay: '0.85s',
-            boxShadow: '0 0 30px rgba(229,9,20,0.55), 0 10px 40px rgba(0,0,0,0.5)',
+            boxShadow: '0 0 40px rgba(229,9,20,0.65), 0 14px 50px rgba(0,0,0,0.55)',
           }}
         >
+          {/* Shine sweep on hover — a thin diagonal highlight that rakes
+              across the button. Pure CSS, no JS. */}
+          <span className="splash-cta-shine" aria-hidden="true" />
           <StartIcon />
-          <span className="text-lg">Начать</span>
-          <span className="text-xl transition-transform group-hover:translate-x-1">→</span>
+          <span className="text-xl tracking-wide">Начать</span>
+          <span className="text-2xl transition-transform group-hover:translate-x-1">→</span>
         </button>
 
         <p
