@@ -3,6 +3,7 @@ import type { Content, SwipeAction } from '@prisma/client';
 import type { ContentType as ApiContentType, LibraryMovie } from '@flicksee/shared';
 import { z } from 'zod';
 import { prisma } from '../db';
+import { detectMatches } from '../lib/matches';
 
 const swipeSchema = z.object({
   tmdbId: z.number().int().positive(),
@@ -105,6 +106,13 @@ export default async function libraryRoutes(app: FastifyInstance) {
         create: { userId, tmdbId, contentType: dbType, action },
         update: { action },
       });
+    });
+
+    // Fire-and-forget: do not let match detection block the swipe response.
+    setImmediate(() => {
+      void detectMatches(userId, { tmdbId, contentType: dbType, action }).catch((e) =>
+        req.log.warn(e),
+      );
     });
 
     return { ok: true };

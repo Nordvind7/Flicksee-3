@@ -19,7 +19,8 @@
     "pg:stop": "bash scripts/pg.sh stop",
     "pg:status": "bash scripts/pg.sh status",
     "verify:auth": "tsx scripts/verify-auth.ts",
-    "verify:library": "tsx scripts/verify-library.ts"
+    "verify:library": "tsx scripts/verify-library.ts",
+    "verify:friends": "tsx scripts/verify-friends.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
