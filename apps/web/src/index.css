@@ -36,20 +36,32 @@
   animation: fadeInUp 0.8s ease-out forwards;
 }
 
-/* Slow pan on the splash poster mosaic — single transform on the wrapper
-   so the browser keeps one compositor layer instead of one-per-tile. The
-   parent already has rotate/scale; this animation composes by adding a
-   tiny vertical drift on top via translate3d (GPU-accelerated). */
+/* Auto-pan layer: vertical drift only, faster than before so the wall
+   feels alive. Composes with the static rotate/scale below and the mouse
+   parallax above. */
 @keyframes splashPan {
   0% {
-    transform: rotate(-4deg) scale(1.4) translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
   }
   100% {
-    transform: rotate(-4deg) scale(1.4) translate3d(0, -30px, 0);
+    transform: translate3d(0, -80px, 0);
   }
 }
 .splash-pan {
-  animation: splashPan 18s ease-in-out infinite alternate;
+  animation: splashPan 9s ease-in-out infinite alternate;
+}
+
+/* Mouse parallax layer: reads CSS variables set imperatively from
+   mousemove. Smooth-eases between samples so the motion feels weighty.
+   Push range is ~30px diagonally either way. */
+.splash-parallax {
+  transform: translate3d(
+    calc(var(--mx, 0) * 30px),
+    calc(var(--my, 0) * 30px),
+    0
+  );
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform;
 }
 
 /* Rotator fade — the keyed React element remounts on text change, which
@@ -78,5 +90,8 @@
   .splash-pan,
   .splash-rotator {
     animation: none !important;
+  }
+  .splash-parallax {
+    transform: none !important;
   }
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StartIcon } from './icons';
 
 interface SplashScreenProps {
@@ -50,36 +50,72 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onStart }) => {
   const grid = useMemo(() => {
     if (posters.length === 0) return [];
     // Two columns × 12 rows = enough to fill any viewport with overflow.
-    return Array.from({ length: 24 }, (_, i) => posters[i % posters.length]);
+    return Array.from({ length: 42 }, (_, i) => posters[i % posters.length]);
   }, [posters]);
+
+  // Mouse parallax. We push transform updates directly to a DOM ref via CSS
+  // variables instead of React state — this avoids re-rendering 42 <img>
+  // elements 60 times per second when the cursor moves.
+  const parallaxRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = parallaxRef.current;
+    if (!el) return;
+    let frame = 0;
+    const onMove = (e: MouseEvent) => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        const x = e.clientX / window.innerWidth - 0.5; // −0.5 .. +0.5
+        const y = e.clientY / window.innerHeight - 0.5;
+        el.style.setProperty('--mx', String(x));
+        el.style.setProperty('--my', String(y));
+      });
+    };
+    window.addEventListener('mousemove', onMove, { passive: true });
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
 
   const title = useMemo(() => 'Flicksee'.split(''), []);
 
   return (
     <div className="relative flex flex-col items-center justify-center h-screen w-screen overflow-hidden bg-black text-white">
-      {/* Poster mosaic — single slow pan on the wrapper (one compositor layer,
-          not 24). Tiles are small-format TMDB (w185, ~12KB each) and have no
-          filter so the GPU stays cool. */}
+      {/* Poster mosaic — 3 nested wrappers, each owning one transform:
+            (1) parallax-wrap: mouse-driven CSS-var translate
+            (2) splash-pan: auto-pan keyframes (faster than before)
+            (3) splash-grid: static rotate + scale to break the orthogonal feel
+          Layering this way lets all three transforms compose without any one
+          fighting the others, and only the parallax layer re-renders on
+          mousemove (via CSS var, not React). */}
       {grid.length > 0 && (
         <div
-          className="absolute inset-0 pointer-events-none splash-pan"
-          style={{
-            transform: 'rotate(-4deg) scale(1.4)',
-            transformOrigin: 'center',
-            willChange: 'transform',
-          }}
+          ref={parallaxRef}
+          className="absolute inset-0 pointer-events-none splash-parallax"
         >
-          <div className="grid grid-cols-4 gap-2 w-[130vw] -ml-[15vw] -mt-[20vh] opacity-70">
-            {grid.map((path, i) => (
-              <img
-                key={`${path}-${i}`}
-                src={`https://image.tmdb.org/t/p/w185${path}`}
-                alt=""
-                loading="eager"
-                decoding="async"
-                className="w-full aspect-[2/3] object-cover rounded-md"
-              />
-            ))}
+          <div className="splash-pan w-full h-full">
+            <div
+              className="splash-grid"
+              style={{
+                transform: 'rotate(-5deg) scale(1.5)',
+                transformOrigin: 'center',
+                willChange: 'transform',
+              }}
+            >
+              <div className="grid grid-cols-7 gap-1.5 w-[140vw] -ml-[20vw] -mt-[25vh] opacity-75">
+                {grid.map((path, i) => (
+                  <img
+                    key={`${path}-${i}`}
+                    src={`https://image.tmdb.org/t/p/w154${path}`}
+                    alt=""
+                    loading="eager"
+                    decoding="async"
+                    className="w-full aspect-[2/3] object-cover rounded"
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
