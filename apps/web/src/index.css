@@ -36,18 +36,20 @@
   animation: fadeInUp 0.8s ease-out forwards;
 }
 
-/* Slow diagonal drift for the splash poster mosaic. Each tile reuses this
-   animation with a staggered delay so the wall feels alive but never busy. */
-@keyframes splashDrift {
+/* Slow pan on the splash poster mosaic — single transform on the wrapper
+   so the browser keeps one compositor layer instead of one-per-tile. The
+   parent already has rotate/scale; this animation composes by adding a
+   tiny vertical drift on top via translate3d (GPU-accelerated). */
+@keyframes splashPan {
   0% {
-    transform: translateY(0);
+    transform: rotate(-4deg) scale(1.4) translate3d(0, 0, 0);
   }
   100% {
-    transform: translateY(-40px);
+    transform: rotate(-4deg) scale(1.4) translate3d(0, -30px, 0);
   }
 }
-.splash-drift > * {
-  animation: splashDrift 7s ease-in-out infinite alternate;
+.splash-pan {
+  animation: splashPan 18s ease-in-out infinite alternate;
 }
 
 /* Rotator fade — the keyed React element remounts on text change, which
@@ -73,7 +75,7 @@
 
 /* Reduced-motion accessibility: kill all the looping ambient effects. */
 @media (prefers-reduced-motion: reduce) {
-  .splash-drift > *,
+  .splash-pan,
   .splash-rotator {
     animation: none !important;
   }

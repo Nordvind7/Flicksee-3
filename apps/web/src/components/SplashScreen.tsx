@@ -57,49 +57,50 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onStart }) => {
 
   return (
     <div className="relative flex flex-col items-center justify-center h-screen w-screen overflow-hidden bg-black text-white">
-      {/* Drifting poster mosaic — diagonal slow scroll, blurred + dimmed. */}
+      {/* Poster mosaic — single slow pan on the wrapper (one compositor layer,
+          not 24). Tiles are small-format TMDB (w185, ~12KB each) and have no
+          filter so the GPU stays cool. */}
       {grid.length > 0 && (
         <div
-          className="absolute inset-0 pointer-events-none opacity-40"
+          className="absolute inset-0 pointer-events-none splash-pan"
           style={{
-            transform: 'rotate(-8deg) scale(1.6)',
+            transform: 'rotate(-4deg) scale(1.4)',
             transformOrigin: 'center',
+            willChange: 'transform',
           }}
         >
-          <div
-            className="grid grid-cols-4 gap-3 w-[140vw] -ml-[20vw] splash-drift"
-            style={{ filter: 'blur(1px)' }}
-          >
+          <div className="grid grid-cols-4 gap-2 w-[130vw] -ml-[15vw] -mt-[20vh] opacity-70">
             {grid.map((path, i) => (
               <img
                 key={`${path}-${i}`}
-                src={`https://image.tmdb.org/t/p/w342${path}`}
+                src={`https://image.tmdb.org/t/p/w185${path}`}
                 alt=""
-                loading="lazy"
+                loading="eager"
+                decoding="async"
                 className="w-full aspect-[2/3] object-cover rounded-md"
-                style={{ animationDelay: `${(i % 6) * -1.2}s` }}
               />
             ))}
           </div>
         </div>
       )}
 
-      {/* Cinematic dark gradient + vignette overlay. */}
+      {/* Cinematic dark gradient + vignette — lighter than before so the
+          poster wall is clearly the hero, not a faint hint. */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            'radial-gradient(ellipse at center, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.85) 60%, rgba(0,0,0,0.98) 100%)',
+            'radial-gradient(ellipse at center, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.70) 70%, rgba(0,0,0,0.92) 100%)',
         }}
       />
-      {/* Top + bottom edge fade for stronger focus on the center copy. */}
+      {/* Narrow top/bottom fade just to anchor the text panel. */}
       <div
-        className="absolute inset-x-0 top-0 h-1/3 pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.9), transparent)' }}
+        className="absolute inset-x-0 top-0 h-24 pointer-events-none"
+        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)' }}
       />
       <div
-        className="absolute inset-x-0 bottom-0 h-1/3 pointer-events-none"
-        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)' }}
+        className="absolute inset-x-0 bottom-0 h-32 pointer-events-none"
+        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }}
       />
 
       {/* Hero content. */}
