@@ -5,7 +5,6 @@ import Header from './components/Header';
 import LikedList from './components/LikedList';
 import type { FilterState, Genre } from './types';
 import { ContentType } from './types';
-import { StartIcon } from './components/icons';
 import { fetchGenres } from './services/tmdb';
 import { useAuth } from './auth/AuthContext';
 import { useSound } from './sound/SoundContext';
@@ -13,6 +12,7 @@ import { useLibrary } from './hooks/useLibrary';
 import FriendsPage from './pages/FriendsPage';
 import FriendProfilePage from './pages/FriendProfilePage';
 import MatchPage from './pages/MatchPage';
+import SplashScreen from './components/SplashScreen';
 
 // Extend the Window interface for TypeScript to recognize the Yandex Metrika function
 declare global {
@@ -81,35 +81,14 @@ const App: React.FC = () => {
   }, [view]);
 
   if (!hasInteracted) {
-    const title = 'Flicksee'.split('');
     return (
-      <div className="flex flex-col items-center justify-center h-screen start-screen-bg text-white p-4 text-center overflow-hidden">
-        <h1 className="text-7xl md:text-8xl font-black text-brand-primary mb-2 flicksee-title" aria-label="Flicksee">
-          {title.map((char, index) => (
-            <span key={index} style={{ animationDelay: `${index * 0.05}s` }}>
-              {char}
-            </span>
-          ))}
-        </h1>
-        <p className="text-lg text-brand-muted mb-8 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-          Свайпай трейлеры, находи фильмы и сериалы
-        </p>
-        <button
-          onClick={() => {
-            // This tap is the user gesture that unlocks autoplay-with-sound.
-            unlock();
-            setHasInteracted(true);
-          }}
-          className="bg-brand-primary text-white font-bold py-4 px-8 rounded-full flex items-center justify-center transition-transform hover:scale-105 animate-fade-in-up animate-pulse-glow"
-          style={{ animationDelay: '0.6s' }}
-        >
-          <StartIcon />
-          <span className="ml-2 text-lg">Начать просмотр</span>
-        </button>
-        <p className="text-xs text-brand-muted mt-8 max-w-sm animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
-          Нажимая "Начать", вы разрешаете автовоспроизведение видео со звуком для лучшего опыта.
-        </p>
-      </div>
+      <SplashScreen
+        onStart={() => {
+          // This tap is the user gesture that unlocks autoplay-with-sound.
+          unlock();
+          setHasInteracted(true);
+        }}
+      />
     );
   }
 
