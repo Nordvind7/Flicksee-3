@@ -58,6 +58,11 @@ model User {
   hostedRooms   Room[]         @relation("RoomHost")
   roomMembers   RoomMember[]
   roomSwipes    RoomSwipe[]
+  friendshipsA  Friendship[]   @relation("FriendshipA")
+  friendshipsB  Friendship[]   @relation("FriendshipB")
+  matchesA      Match[]        @relation("MatchA")
+  matchesB      Match[]        @relation("MatchB")
+  invites       Invite[]       @relation("InviteCreator")
 
   @@index([lastSeenAt])
 }
@@ -147,7 +152,7 @@ model Room {
 
   members RoomMember[]
   swipes  RoomSwipe[]
-  matches Match[]
+  matches RoomMatch[]
 
   @@index([status])
   @@index([hostId])
@@ -185,8 +190,9 @@ model RoomSwipe {
   @@index([roomId, userId])
 }
 
-// A title that enough room members liked — the payoff of a session.
-model Match {
+// A title that enough room members liked — the payoff of a room session.
+// Renamed from `Match` in Phase 7 to free that name for friend-scoped matches.
+model RoomMatch {
   id          String      @id @default(cuid())
   roomId      String
   room        Room        @relation(fields: [roomId], references: [id], onDelete: Cascade)
@@ -196,4 +202,59 @@ model Match {
 
   @@unique([roomId, tmdbId])
   @@index([roomId])
+}
+
+// ───────────────────────── Friendships (Phase 7) ─────────────────────────
+
+// Symmetric friendship between two users. We always store (smaller, larger)
+// user-id, enforced by a unique index, so (A,B) and (B,A) cannot both exist.
+model Friendship {
+  id          String   @id @default(cuid())
+  userAId     String // smaller cuid (lex order)
+  userBId     String // larger cuid
+  createdAt   DateTime @default(now())
+  inviteToken String? // which invite linked them (audit only)
+
+  userA User @relation("FriendshipA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB User @relation("FriendshipB", fields: [userBId], references: [id], onDelete: Cascade)
+
+  @@unique([userAId, userBId])
+  @@index([userAId])
+  @@index([userBId])
+}
+
+// A title both friends LIKEd. Stored canonically (userAId < userBId) so the
+// pair has exactly one row regardless of who swiped first.
+model Match {
+  id          String      @id @default(cuid())
+  userAId     String // smaller id
+  userBId     String // larger id
+  tmdbId      Int
+  contentType ContentType
+  matchedAt   DateTime    @default(now())
+  notified    Boolean     @default(false) // push delivered?
+  seenByA     Boolean     @default(false) // user A opened it in app
+  seenByB     Boolean     @default(false)
+
+  userA User @relation("MatchA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB User @relation("MatchB", fields: [userBId], references: [id], onDelete: Cascade)
+
+  @@unique([userAId, userBId, tmdbId, contentType])
+  @@index([userAId, matchedAt])
+  @@index([userBId, matchedAt])
+}
+
+// Single-use Telegram deeplink token: t.me/<BOT_USERNAME>?start=<token>
+model Invite {
+  token      String    @id
+  creatorId  String
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  consumedBy String?
+  consumedAt DateTime?
+
+  creator User @relation("InviteCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId])
+  @@index([expiresAt])
 }
