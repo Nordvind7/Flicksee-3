@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Inter', sans-serif;
+    overscroll-behavior-y: contain;
+  }
+}
+
+/* Keyframes are also declared in tailwind.config.js for the animate-* utilities;
+   duplicated here so raw-CSS consumers (.flicksee-title) work even if the
+   utility is purged. */
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.start-screen-bg {
+  background-color: #000;
+  background-image:
+    radial-gradient(circle at 25% 30%, rgba(229, 9, 20, 0.15), transparent 40%),
+    radial-gradient(circle at 75% 70%, rgba(50, 50, 150, 0.15), transparent 40%);
+}
+
+.flicksee-title span {
+  display: inline-block;
+  opacity: 0;
+  animation: fadeInUp 0.8s ease-out forwards;
+}
