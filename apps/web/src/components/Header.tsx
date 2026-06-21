@@ -1,8 +1,10 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { HeartIcon, FilmIcon, EyeIcon, FilterIcon } from './icons';
 import FilterModal from './FilterModal';
 import LoginButton from './LoginButton';
+import { useMatchPolling } from '../hooks/useMatchPolling';
 import type { FilterState } from '../types';
 
 interface HeaderProps {
@@ -31,6 +33,8 @@ const NavButton: React.FC<{
 
 const Header: React.FC<HeaderProps> = ({ currentView, setView, filters, setFilters }) => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const navigate = useNavigate();
+  const { count: unseenMatches } = useMatchPolling();
 
   return (
     <>
@@ -61,6 +65,18 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView, filters, setFilte
           >
             <EyeIcon />
           </NavButton>
+          <button
+            onClick={() => navigate('/friends')}
+            className="relative p-2 text-brand-muted hover:text-white"
+            aria-label="Друзья"
+          >
+            👥
+            {unseenMatches > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] leading-none rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center">
+                {unseenMatches}
+              </span>
+            )}
+          </button>
           <button
             onClick={() => setIsFilterModalOpen(true)}
             className="p-2 text-brand-muted hover:text-white"

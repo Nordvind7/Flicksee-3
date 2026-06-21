@@ -1,6 +1,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './auth/AuthContext';
 import { SoundProvider } from './sound/SoundContext';
@@ -14,11 +15,13 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <AuthProvider>
-      <SoundProvider>
-        <App />
-      </SoundProvider>
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <SoundProvider>
+          <App />
+        </SoundProvider>
+      </AuthProvider>
+    </BrowserRouter>
   </React.StrictMode>
 );
    

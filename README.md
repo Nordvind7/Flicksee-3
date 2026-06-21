@@ -88,4 +88,24 @@ pnpm db:studio            # GUI-просмотр данных
 | `RefreshToken` | refresh-токены своего JWT (хранится только хэш) |
 | `Content` | кэш TMDB (трейлер, постеры, RU-провайдеры) по `(tmdbId, type)` |
 | `Swipe` | личные свайпы LIKE/DISLIKE/SEEN — одна запись на `(user, title)` |
-| `Room` · `RoomMember` · `RoomSwipe` · `Match` | совместные сеансы и матчи с друзьями |
+| `Room` · `RoomMember` · `RoomSwipe` · `RoomMatch` | совместные сеансы (Phase 7.5+, пока неактивны) |
+| `Friendship` · `Match` · `Invite` | Phase 7 — друзья, матчи, deeplink-инвайты |
+
+### Phase 7 — Friends & Matches
+
+Добавить друга → tap «Пригласить» → откроется share-sheet с
+`t.me/Flicksee_bot?start=<token>` → друг кликает → бот линкует аккаунты,
+сразу подсчитывает ретро-матчи (фильмы, которые оба лайкнули раньше).
+Каждый новый матч → push в бот с кнопкой «Открыть» на `/matches/:id`.
+
+**Новые env-переменные (apps/api/.env):**
+
+```bash
+BOT_MODE=polling                          # polling в dev, webhook в проде
+WEB_PUBLIC_URL=http://localhost:3000      # для inline-кнопок в пушах
+# TELEGRAM_BOT_WEBHOOK_SECRET=<crypto-random>  # обязательно при BOT_MODE=webhook
+```
+
+**Запуск:** `pnpm dev` стартует API + поллинг бота автоматически.
+
+**Verify:** `cd apps/api && pnpm verify:friends` — 16 inproc-проверок.

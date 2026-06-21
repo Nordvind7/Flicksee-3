@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import SwipeContainer from './components/SwipeContainer';
 import Header from './components/Header';
 import LikedList from './components/LikedList';
@@ -9,6 +10,9 @@ import { fetchGenres } from './services/tmdb';
 import { useAuth } from './auth/AuthContext';
 import { useSound } from './sound/SoundContext';
 import { useLibrary } from './hooks/useLibrary';
+import FriendsPage from './pages/FriendsPage';
+import FriendProfilePage from './pages/FriendProfilePage';
+import MatchPage from './pages/MatchPage';
 
 // Extend the Window interface for TypeScript to recognize the Yandex Metrika function
 declare global {
@@ -109,7 +113,7 @@ const App: React.FC = () => {
     );
   }
 
-  return (
+  const mainShell = (
     <div className="h-screen w-screen overflow-hidden flex flex-col bg-brand-background">
       <Header currentView={view} setView={setView} filters={filters} setFilters={setFilters} />
       <main className="flex-grow relative pt-20 overflow-y-auto">
@@ -129,6 +133,15 @@ const App: React.FC = () => {
         {view === 'watched' && <LikedList movies={watchedMovies} title="Просмотрено" />}
       </main>
     </div>
+  );
+
+  return (
+    <Routes>
+      <Route path="/friends" element={<FriendsPage />} />
+      <Route path="/friends/:id" element={<FriendProfilePage />} />
+      <Route path="/matches/:id" element={<MatchPage />} />
+      <Route path="*" element={mainShell} />
+    </Routes>
   );
 };
 
