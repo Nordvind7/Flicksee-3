@@ -144,8 +144,9 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWa
       // Cap the card stack so it never balloons across a desktop monitor.
       // The Tinder-style metaphor works at phone proportions; at 1440 wide
       // the trailer was eating the whole viewport and the action buttons
-      // fell below the fold.
-      <div className="relative w-full max-w-md h-full mx-auto flex items-center justify-center px-2">
+      // fell below the fold. max-w-lg gives ~512px — meaningfully bigger
+      // than a phone but still card-shaped.
+      <div className="relative w-full max-w-lg h-full mx-auto flex items-center justify-center px-2">
         {visibleMovies.map((movie, index) => {
           return (
             <TrailerCard

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useFriendProfile } from '../hooks/useFriendProfile';
+import { ChevronLeftIcon } from '../components/icons';
 
 const FriendProfilePage: React.FC = () => {
   const { id = '' } = useParams<{ id: string }>();
@@ -28,18 +29,19 @@ const FriendProfilePage: React.FC = () => {
   const friendName = data.friend.firstName ?? data.friend.username ?? 'Друг';
 
   return (
-    <div className="min-h-screen bg-brand-background text-white p-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-center justify-between mb-4">
+    <div className="min-h-screen bg-ink-900 text-ink-50 p-4 md:p-6">
+      <div className="max-w-3xl mx-auto">
+        <div className="flex items-center justify-between mb-5">
           <button
             onClick={() => navigate('/friends')}
-            className="text-neutral-400 hover:text-white"
+            className="flex items-center gap-1 text-ink-200 hover:text-white transition-colors"
           >
-            ←
+            <ChevronLeftIcon />
+            <span className="text-sm">Назад</span>
           </button>
-          <h1 className="text-xl font-semibold">{friendName}</h1>
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate max-w-[60%]">{friendName}</h1>
           <button
-            className="text-sm text-red-400 hover:text-red-300"
+            className="text-sm text-ink-200 hover:text-accent transition-colors"
             onClick={async () => {
               if (confirm('Удалить из друзей? Совпадения тоже исчезнут.')) {
                 await unfriend();
@@ -50,29 +52,45 @@ const FriendProfilePage: React.FC = () => {
             Удалить
           </button>
         </div>
-        <div className="text-sm text-neutral-400 mb-3">
-          {matched.size > 0 ? `🎬 ${matched.size} общих хочу-посмотреть` : 'Пока нет общих'}
+        <div className="bg-ink-700/60 ring-1 ring-white/5 rounded-2xl px-5 py-4 mb-5 flex items-center justify-between">
+          <div>
+            <div className="text-2xl font-bold text-ink-50">{matched.size}</div>
+            <div className="text-xs text-ink-200 uppercase tracking-wider">Общих хочу-посмотреть</div>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-ink-50">{data.watchlist.length}</div>
+            <div className="text-xs text-ink-200 uppercase tracking-wider">У друга в watchlist</div>
+          </div>
         </div>
         {sorted.length === 0 ? (
-          <div className="text-neutral-400 text-center py-12">У друга пока пустой watchlist.</div>
+          <div className="text-ink-200 text-center py-12">У друга пока пустой watchlist.</div>
         ) : (
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {sorted.map((m) => (
               <div
                 key={`${m.id}-${m.contentType}`}
-                className={`relative rounded-md overflow-hidden ${
-                  matched.has(m.id) ? 'ring-2 ring-yellow-400' : ''
+                className={`group relative rounded-xl overflow-hidden transition-transform hover:scale-[1.03] ${
+                  matched.has(m.id)
+                    ? 'ring-2 ring-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.25)]'
+                    : 'ring-1 ring-white/5'
                 }`}
               >
-                {m.poster_path && (
+                {m.poster_path ? (
                   <img
                     src={`https://image.tmdb.org/t/p/w342${m.poster_path}`}
                     alt={m.title}
-                    className="w-full h-auto"
+                    className="w-full aspect-[2/3] object-cover"
                     loading="lazy"
                   />
+                ) : (
+                  <div className="w-full aspect-[2/3] bg-ink-600" />
                 )}
-                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-1 text-xs truncate">
+                {matched.has(m.id) && (
+                  <span className="absolute top-2 left-2 bg-yellow-400 text-ink-900 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
+                    Матч
+                  </span>
+                )}
+                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 text-xs font-medium truncate">
                   {m.title}
                 </div>
               </div>

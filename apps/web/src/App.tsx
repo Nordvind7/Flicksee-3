@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import SwipeContainer from './components/SwipeContainer';
 import Header from './components/Header';
 import LikedList from './components/LikedList';
@@ -12,6 +12,7 @@ import { useLibrary } from './hooks/useLibrary';
 import FriendsPage from './pages/FriendsPage';
 import FriendProfilePage from './pages/FriendProfilePage';
 import MatchPage from './pages/MatchPage';
+import BlogPage from './pages/BlogPage';
 import SplashScreen from './components/SplashScreen';
 
 // Extend the Window interface for TypeScript to recognize the Yandex Metrika function
@@ -28,8 +29,13 @@ const App: React.FC = () => {
   const { unlock } = useSound();
   const { likedMovies, watchedMovies, excludedIds, handleLike, handleDislike, handleWatched } =
     useLibrary(user, authLoading);
+  const location = useLocation();
 
   const [view, setView] = useState<'swipe' | 'liked' | 'watched'>('swipe');
+  // Splash gate: only shown when the user lands on the home route. Direct
+  // deeplinks (/friends, /matches/:id, /blog/...) skip it so a bot-push
+  // notification lands the user where they expected.
+  const isHomeRoute = location.pathname === '/';
   const [hasInteracted, setHasInteracted] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     contentType: ContentType.Movie,
@@ -80,7 +86,7 @@ const App: React.FC = () => {
     }
   }, [view]);
 
-  if (!hasInteracted) {
+  if (!hasInteracted && isHomeRoute) {
     return (
       <SplashScreen
         onStart={() => {
@@ -119,6 +125,8 @@ const App: React.FC = () => {
       <Route path="/friends" element={<FriendsPage />} />
       <Route path="/friends/:id" element={<FriendProfilePage />} />
       <Route path="/matches/:id" element={<MatchPage />} />
+      <Route path="/blog" element={<BlogPage />} />
+      <Route path="/blog/:slug" element={<BlogPage />} />
       <Route path="*" element={mainShell} />
     </Routes>
   );

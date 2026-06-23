@@ -39,36 +39,49 @@ const MatchPage: React.FC = () => {
   const { match, content, friend } = data;
   const friendName = friend?.firstName ?? friend?.username ?? 'другом';
   return (
-    <div className="min-h-screen bg-brand-background text-white p-4">
-      <div className="max-w-md mx-auto text-center">
-        <h1 className="text-2xl font-bold mb-1">🎬 Матч!</h1>
-        <div className="text-neutral-400 mb-4">с {friendName}</div>
+    <div className="min-h-screen bg-ink-900 text-ink-50 p-4 md:p-6">
+      <div className="max-w-md mx-auto">
+        {/* Hero match callout */}
+        <div className="text-center mb-6 mt-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-400/15 text-yellow-300 text-xs font-bold uppercase tracking-wider mb-3">
+            <span>🎬</span>
+            Матч
+          </div>
+          <h1 className="text-3xl md:text-4xl font-black tracking-tight">
+            {content?.title ?? `Фильм #${match.tmdbId}`}
+          </h1>
+          <p className="text-ink-200 mt-1">Тебе и {friendName} понравилось одно и то же</p>
+        </div>
         {content?.posterPath && (
-          <img
-            src={`https://image.tmdb.org/t/p/w500${content.posterPath}`}
-            alt={content.title}
-            className="rounded-lg mx-auto mb-4 max-h-[60vh]"
-          />
+          <div className="relative rounded-3xl overflow-hidden shadow-card-lg ring-1 ring-white/10 mb-5">
+            <img
+              src={`https://image.tmdb.org/t/p/w500${content.posterPath}`}
+              alt={content.title}
+              className="w-full h-auto max-h-[55vh] object-cover"
+            />
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/70 to-transparent" />
+          </div>
         )}
-        <div className="text-lg font-medium">{content?.title ?? `tmdb:${match.tmdbId}`}</div>
         {content?.overview && (
-          <div className="text-sm text-neutral-400 mt-2 text-left">{content.overview}</div>
+          <div className="bg-ink-700/60 ring-1 ring-white/5 rounded-2xl p-4 mb-5">
+            <p className="text-sm text-ink-100 leading-relaxed">{content.overview}</p>
+          </div>
         )}
-        <div className="mt-6 flex gap-2 justify-center">
-          {friend && (
-            <button
-              onClick={() => nav(`/friends/${friend.id}`)}
-              className="bg-neutral-800 hover:bg-neutral-700 px-4 py-2 rounded text-sm"
-            >
-              Профиль друга
-            </button>
-          )}
+        <div className="flex flex-col gap-2">
           <button
             onClick={() => nav('/')}
-            className="bg-brand-primary hover:bg-red-700 px-4 py-2 rounded text-sm"
+            className="bg-accent hover:bg-accent-hover text-white font-semibold py-3 rounded-full shadow-glow-accent transition-all hover:scale-[1.02] active:scale-95"
           >
             Свайпать дальше
           </button>
+          {friend && (
+            <button
+              onClick={() => nav(`/friends/${friend.id}`)}
+              className="bg-ink-700 hover:bg-ink-600 text-ink-100 font-medium py-3 rounded-full ring-1 ring-white/5 transition-colors"
+            >
+              Все матчи с {friendName}
+            </button>
+          )}
         </div>
       </div>
     </div>
