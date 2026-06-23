@@ -114,8 +114,10 @@ const App: React.FC = () => {
             />
           </div>
         )}
-        {view === 'liked' && <LikedList movies={likedMovies} />}
-        {view === 'watched' && <LikedList movies={watchedMovies} title="Просмотрено" />}
+        {view === 'liked' && <LikedList movies={likedMovies} genreMap={genreMap} />}
+        {view === 'watched' && (
+          <LikedList movies={watchedMovies} title="Просмотрено" genreMap={genreMap} />
+        )}
       </main>
     </div>
   );
