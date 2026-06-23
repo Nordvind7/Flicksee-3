@@ -267,7 +267,10 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, tra
       onTouchMove={(e) => handleDragMove(e.touches[0].clientX, e.touches[0].clientY)}
       onTouchEnd={handleDragEnd}
     >
-      <div className="relative w-full h-full rounded-3xl overflow-hidden shadow-card-lg bg-ink-700 ring-1 ring-white/5 flex flex-col">
+      <div
+        className="relative w-full h-full rounded-3xl overflow-hidden shadow-card-lg bg-ink-700 ring-1 ring-white/5 flex flex-col"
+        style={{ backgroundColor: '#16161a' }}
+      >
         <div className="w-full aspect-video bg-black flex items-center justify-center relative">
           {isLoading && <p className="text-brand-muted">Загрузка трейлера...</p>}
           {!isLoading && trailerKey && (
@@ -312,7 +315,10 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, tra
           )}
         </div>
 
-        <div className="flex-grow p-5 flex flex-col justify-between bg-ink-700">
+        <div
+          className="flex-grow p-5 flex flex-col justify-between bg-ink-700"
+          style={{ backgroundColor: '#16161a' }}
+        >
           <div>
             <div className="space-y-2.5">
               <h2 className="text-2xl font-bold text-ink-50 leading-tight tracking-tight truncate">{movie.title}</h2>
