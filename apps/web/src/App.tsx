@@ -14,6 +14,7 @@ import FriendProfilePage from './pages/FriendProfilePage';
 import MatchPage from './pages/MatchPage';
 import BlogPage from './pages/BlogPage';
 import SplashScreen from './components/SplashScreen';
+import SearchOverlay from './components/SearchOverlay';
 
 // Extend the Window interface for TypeScript to recognize the Yandex Metrika function
 declare global {
@@ -32,6 +33,18 @@ const App: React.FC = () => {
   const location = useLocation();
 
   const [view, setView] = useState<'swipe' | 'liked' | 'watched'>('swipe');
+  const [searchOpen, setSearchOpen] = useState(false);
+  // Cmd/Ctrl+K opens search globally on the home shell.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.key === 'k' || e.key === 'K' || e.key === 'л' || e.key === 'Л') && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
   // Splash gate: only shown when the user lands on the home route. Direct
   // deeplinks (/friends, /matches/:id, /blog/...) skip it so a bot-push
   // notification lands the user where they expected.
@@ -100,7 +113,13 @@ const App: React.FC = () => {
 
   const mainShell = (
     <div className="h-screen w-screen overflow-hidden flex flex-col bg-brand-background">
-      <Header currentView={view} setView={setView} filters={filters} setFilters={setFilters} />
+      <Header
+        currentView={view}
+        setView={setView}
+        filters={filters}
+        setFilters={setFilters}
+        onOpenSearch={() => setSearchOpen(true)}
+      />
       <main className="flex-grow relative pt-20 overflow-y-auto">
         {view === 'swipe' && (
           <div className="h-full">
@@ -115,11 +134,30 @@ const App: React.FC = () => {
             />
           </div>
         )}
-        {view === 'liked' && <LikedList movies={likedMovies} genreMap={genreMap} />}
+        {view === 'liked' && (
+          <LikedList
+            movies={likedMovies}
+            genreMap={genreMap}
+            onLikeRecommendation={handleLike}
+            excludedIds={excludedIds}
+          />
+        )}
         {view === 'watched' && (
-          <LikedList movies={watchedMovies} title="Просмотрено" genreMap={genreMap} />
+          <LikedList
+            movies={watchedMovies}
+            title="Просмотрено"
+            genreMap={genreMap}
+            onLikeRecommendation={handleLike}
+            excludedIds={excludedIds}
+          />
         )}
       </main>
+      <SearchOverlay
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onLike={handleLike}
+        excludedIds={excludedIds}
+      />
     </div>
   );
 

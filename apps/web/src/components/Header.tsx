@@ -12,6 +12,7 @@ interface HeaderProps {
   setView: (view: 'swipe' | 'liked' | 'watched') => void;
   filters: FilterState;
   setFilters: (filters: FilterState) => void;
+  onOpenSearch?: () => void;
 }
 
 const NavButton: React.FC<{
@@ -39,7 +40,7 @@ const NavButton: React.FC<{
   </button>
 );
 
-const Header: React.FC<HeaderProps> = ({ currentView, setView, filters, setFilters }) => {
+const Header: React.FC<HeaderProps> = ({ currentView, setView, filters, setFilters, onOpenSearch }) => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -92,6 +93,16 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView, filters, setFilte
           >
             <FriendsIcon />
           </NavButton>
+          {onHome && onOpenSearch && (
+            <button
+              onClick={onOpenSearch}
+              className="p-2 rounded-xl text-ink-200 hover:text-white hover:bg-white/5 transition-all"
+              aria-label="Поиск"
+              title="⌘K"
+            >
+              <span className="text-lg">🔍</span>
+            </button>
+          )}
           {onHome && (
             <NavButton
               isActive={false}

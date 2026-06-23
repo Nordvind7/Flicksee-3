@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import type { Movie, Genre } from '../types';
 import { TMDB_IMAGE_BASE_URL } from '../constants';
 import { ShareIcon, StarIcon } from './icons';
+import MovieDetailModal from './MovieDetailModal';
 
 interface LikedListProps {
   movies: Movie[];
   title?: string;
   genreMap?: { movie: Map<number, string>; tv: Map<number, string> };
+  onLikeRecommendation?: (movie: Movie) => void;
+  excludedIds?: Set<number>;
 }
 
 const PLACEHOLDER_IMG =
@@ -17,7 +20,8 @@ const MovieCard: React.FC<{
   genreNames: string[];
   onShare?: (movie: Movie) => void;
   canShare: boolean;
-}> = ({ movie, genreNames, onShare, canShare }) => {
+  onOpen: () => void;
+}> = ({ movie, genreNames, onShare, canShare, onOpen }) => {
   const [expanded, setExpanded] = useState(false);
   const year =
     movie.release_date?.substring(0, 4) || movie.first_air_date?.substring(0, 4) || '';
@@ -26,7 +30,8 @@ const MovieCard: React.FC<{
 
   return (
     <article
-      className="flex gap-3 sm:gap-4 p-3 rounded-2xl ring-1 ring-white/5 transition-all hover:ring-white/10"
+      onClick={onOpen}
+      className="flex gap-3 sm:gap-4 p-3 rounded-2xl ring-1 ring-white/5 transition-all hover:ring-white/10 cursor-pointer"
       style={{ backgroundColor: '#16161a' }}
     >
       <div className="shrink-0 w-24 sm:w-28 md:w-32 rounded-xl overflow-hidden ring-1 ring-white/5">
@@ -45,7 +50,10 @@ const MovieCard: React.FC<{
           </h3>
           {canShare && onShare && (
             <button
-              onClick={() => onShare(movie)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onShare(movie);
+              }}
               className="shrink-0 p-1.5 text-ink-200 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
               aria-label="Поделиться"
             >
@@ -90,7 +98,10 @@ const MovieCard: React.FC<{
         </p>
         {needsClamp && (
           <button
-            onClick={() => setExpanded((v) => !v)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded((v) => !v);
+            }}
             className="self-start text-xs text-ink-300 hover:text-white mt-1 font-medium transition-colors"
           >
             {expanded ? 'свернуть' : 'ещё'}
@@ -105,8 +116,11 @@ const LikedList: React.FC<LikedListProps> = ({
   movies,
   title = 'Хочу посмотреть',
   genreMap,
+  onLikeRecommendation,
+  excludedIds,
 }) => {
   const canShare = typeof navigator !== 'undefined' && !!navigator.share;
+  const [openMovie, setOpenMovie] = useState<Movie | null>(null);
 
   const handleShare = async (movie: Movie) => {
     const contentType = movie.contentType || 'movie';
@@ -156,9 +170,17 @@ const LikedList: React.FC<LikedListProps> = ({
             genreNames={namesFor(movie)}
             onShare={canShare ? handleShare : undefined}
             canShare={canShare}
+            onOpen={() => setOpenMovie(movie)}
           />
         ))}
       </div>
+      <MovieDetailModal
+        movie={openMovie}
+        onClose={() => setOpenMovie(null)}
+        onLike={(m) => onLikeRecommendation?.(m)}
+        genreMap={genreMap}
+        excludedIds={excludedIds ?? new Set()}
+      />
     </div>
   );
 };
