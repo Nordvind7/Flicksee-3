@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useFriendProfile } from '../hooks/useFriendProfile';
-import { ChevronLeftIcon } from '../components/icons';
+import TopNav from '../components/TopNav';
 
 const FriendProfilePage: React.FC = () => {
   const { id = '' } = useParams<{ id: string }>();
@@ -29,19 +29,13 @@ const FriendProfilePage: React.FC = () => {
   const friendName = data.friend.firstName ?? data.friend.username ?? 'Друг';
 
   return (
-    <div className="min-h-screen bg-ink-900 text-ink-50 p-4 md:p-6">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-ink-900 text-ink-50" style={{ backgroundColor: '#0a0a0b' }}>
+      <TopNav />
+      <div className="max-w-3xl mx-auto p-4 md:p-6">
         <div className="flex items-center justify-between mb-5">
+          <h1 className="text-2xl md:text-3xl font-black tracking-tight truncate flex-1 mr-3">{friendName}</h1>
           <button
-            onClick={() => navigate('/friends')}
-            className="flex items-center gap-1 text-ink-200 hover:text-white transition-colors"
-          >
-            <ChevronLeftIcon />
-            <span className="text-sm">Назад</span>
-          </button>
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight truncate max-w-[60%]">{friendName}</h1>
-          <button
-            className="text-sm text-ink-200 hover:text-accent transition-colors"
+            className="text-sm text-ink-200 hover:text-accent transition-colors whitespace-nowrap"
             onClick={async () => {
               if (confirm('Удалить из друзей? Совпадения тоже исчезнут.')) {
                 await unfriend();

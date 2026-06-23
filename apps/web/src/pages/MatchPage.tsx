@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getMatch, markMatchSeen, type MatchDetail } from '../lib/api';
+import TopNav from '../components/TopNav';
 
 const MatchPage: React.FC = () => {
   const { id = '' } = useParams<{ id: string }>();
@@ -39,8 +40,9 @@ const MatchPage: React.FC = () => {
   const { match, content, friend } = data;
   const friendName = friend?.firstName ?? friend?.username ?? 'другом';
   return (
-    <div className="min-h-screen bg-ink-900 text-ink-50 p-4 md:p-6">
-      <div className="max-w-md mx-auto">
+    <div className="min-h-screen bg-ink-900 text-ink-50" style={{ backgroundColor: '#0a0a0b' }}>
+      <TopNav />
+      <div className="max-w-md mx-auto p-4 md:p-6">
         {/* Hero match callout */}
         <div className="text-center mb-6 mt-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-400/15 text-yellow-300 text-xs font-bold uppercase tracking-wider mb-3">

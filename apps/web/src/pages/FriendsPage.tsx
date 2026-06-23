@@ -1,12 +1,11 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useFriends } from '../hooks/useFriends';
 import FriendCard from '../components/FriendCard';
-import { ChevronLeftIcon, FriendsIcon } from '../components/icons';
+import { FriendsIcon } from '../components/icons';
+import TopNav from '../components/TopNav';
 
 const FriendsPage: React.FC = () => {
   const { friends, loading, invite } = useFriends();
-  const navigate = useNavigate();
 
   const onInvite = async () => {
     try {
@@ -29,21 +28,15 @@ const FriendsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-ink-900 text-ink-50 p-4 md:p-6">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-ink-900 text-ink-50" style={{ backgroundColor: '#0a0a0b' }}>
+      <TopNav />
+      <div className="max-w-2xl mx-auto p-4 md:p-6">
         <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-1 text-ink-200 hover:text-white transition-colors"
-            aria-label="Назад"
-          >
-            <ChevronLeftIcon />
-            <span className="text-sm">Назад</span>
-          </button>
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight">Друзья</h1>
+          <h1 className="text-2xl md:text-3xl font-black tracking-tight">Друзья</h1>
           <button
             onClick={onInvite}
             className="bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-full text-sm font-semibold shadow-glow-accent transition-all hover:scale-[1.03] active:scale-95"
+            style={{ backgroundColor: '#E50914' }}
           >
             Пригласить
           </button>
