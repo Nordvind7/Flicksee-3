@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# Sitemap location for crawlers
+Sitemap: https://flicksee.app/sitemap.xml
+
+# Telegram-friendly: full crawl
+User-agent: TelegramBot
+Allow: /
+
+# Яндекс
+User-agent: Yandex
+Allow: /
+Clean-param: utm_source&utm_medium&utm_campaign&utm_content&utm_term
