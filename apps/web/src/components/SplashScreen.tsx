@@ -86,42 +86,41 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onStart }) => {
   return (
     <div className="relative flex flex-col items-center justify-center h-screen w-screen overflow-hidden bg-black text-white">
       {/* Poster mosaic — 3 nested wrappers, each owning one transform:
-            (1) parallax-wrap: mouse-driven CSS-var translate
-            (2) splash-pan: auto-pan keyframes (faster than before)
+            (1) parallax-wrap: mouse-driven CSS-var translate (always mounted,
+                so the ref is wired up regardless of whether TMDB responded)
+            (2) splash-pan: auto-pan keyframes
             (3) splash-grid: static rotate + scale to break the orthogonal feel
           Layering this way lets all three transforms compose without any one
           fighting the others, and only the parallax layer re-renders on
-          mousemove (via CSS var, not React). */}
-      {grid.length > 0 && (
-        <div
-          ref={parallaxRef}
-          className="absolute inset-0 pointer-events-none splash-parallax"
-        >
-          <div className="splash-pan w-full h-full">
-            <div
-              className="splash-grid"
-              style={{
-                transform: 'rotate(-5deg) scale(1.5)',
-                transformOrigin: 'center',
-                willChange: 'transform',
-              }}
-            >
-              <div className="grid grid-cols-7 gap-1.5 w-[140vw] -ml-[20vw] -mt-[25vh] opacity-75">
-                {grid.map((path, i) => (
-                  <img
-                    key={`${path}-${i}`}
-                    src={`https://image.tmdb.org/t/p/w154${path}`}
-                    alt=""
-                    loading="eager"
-                    decoding="async"
-                    className="w-full aspect-[2/3] object-cover rounded"
-                  />
-                ))}
-              </div>
+          pointermove (via CSS var, not React). */}
+      <div
+        ref={parallaxRef}
+        className="absolute inset-0 pointer-events-none splash-parallax"
+      >
+        <div className="splash-pan w-full h-full">
+          <div
+            className="splash-grid"
+            style={{
+              transform: 'rotate(-5deg) scale(1.5)',
+              transformOrigin: 'center',
+              willChange: 'transform',
+            }}
+          >
+            <div className="grid grid-cols-7 gap-1.5 w-[140vw] -ml-[20vw] -mt-[25vh] opacity-75">
+              {grid.map((path, i) => (
+                <img
+                  key={`${path}-${i}`}
+                  src={`https://image.tmdb.org/t/p/w154${path}`}
+                  alt=""
+                  loading="eager"
+                  decoding="async"
+                  className="w-full aspect-[2/3] object-cover rounded"
+                />
+              ))}
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Cinematic dark gradient + vignette — lighter than before so the
           poster wall is clearly the hero, not a faint hint. */}

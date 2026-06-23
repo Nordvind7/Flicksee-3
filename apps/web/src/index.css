@@ -105,13 +105,12 @@
   animation: splashRotator 2.8s ease-in-out forwards;
 }
 
-/* Reduced-motion accessibility: kill all the looping ambient effects. */
+/* Reduced-motion accessibility: kill ambient looping motion, but keep the
+   pointer parallax — that's user-initiated (they're actively moving the
+   cursor), so WCAG doesn't ask us to suppress it. */
 @media (prefers-reduced-motion: reduce) {
   .splash-pan,
   .splash-rotator {
     animation: none !important;
-  }
-  .splash-parallax {
-    transform: none !important;
   }
 }
