@@ -68,24 +68,52 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWa
     }
   }, [movies, currentIndex, filters.contentType]);
 
-  const handleSwipe = (direction: 'left' | 'right' | 'up', movie: Movie) => {
-    const newIndex = currentIndex + 1;
-    setCurrentIndex(newIndex);
-    
-    try {
-      localStorage.setItem('flicksee_swipe_currentIndex', String(newIndex));
-    } catch (e) {
-      console.error("Failed to save swipe index to localStorage", e);
-    }
+  const handleSwipe = useCallback(
+    (direction: 'left' | 'right' | 'up', movie: Movie) => {
+      const newIndex = currentIndex + 1;
+      setCurrentIndex(newIndex);
 
-    if (direction === 'right') {
-      onLike(movie);
-    } else if (direction === 'left') {
-      onDislike(movie);
-    } else if (direction === 'up') {
-      onWatched(movie);
-    }
-  };
+      try {
+        localStorage.setItem('flicksee_swipe_currentIndex', String(newIndex));
+      } catch (e) {
+        console.error('Failed to save swipe index to localStorage', e);
+      }
+
+      if (direction === 'right') {
+        onLike(movie);
+      } else if (direction === 'left') {
+        onDislike(movie);
+      } else if (direction === 'up') {
+        onWatched(movie);
+      }
+    },
+    [currentIndex, onLike, onDislike, onWatched],
+  );
+
+  // Desktop keyboard shortcuts — arrows mirror the swipe gestures and make
+  // the app usable without ever touching the mouse. Discoverable via the
+  // hint row under the action buttons.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // Don't hijack arrows while the user is typing in an input/textarea.
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      const top = movies[currentIndex];
+      if (!top) return;
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handleSwipe('left', top);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleSwipe('right', top);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        handleSwipe('up', top);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [movies, currentIndex, handleSwipe]);
 
   const renderContent = () => {
     const hasMoviesToShow = movies.length > currentIndex;
@@ -113,7 +141,11 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWa
     const visibleMovies = movies.slice(currentIndex, currentIndex + PRELOAD_COUNT);
 
     return (
-      <div className="relative w-full h-full flex items-center justify-center">
+      // Cap the card stack so it never balloons across a desktop monitor.
+      // The Tinder-style metaphor works at phone proportions; at 1440 wide
+      // the trailer was eating the whole viewport and the action buttons
+      // fell below the fold.
+      <div className="relative w-full max-w-md h-full mx-auto flex items-center justify-center px-2">
         {visibleMovies.map((movie, index) => {
           return (
             <TrailerCard

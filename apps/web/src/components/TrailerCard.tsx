@@ -358,17 +358,42 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, tra
             </div>
           </div>
 
-          <div className="flex justify-around items-center pt-4">
-            <ActionButton onClick={() => triggerSwipe('left')} ariaLabel="Не нравится">
+          <div className="flex justify-around items-end pt-4 gap-2">
+            <ActionButton
+              onClick={() => triggerSwipe('left')}
+              ariaLabel="Не нравится"
+              label="Не моё"
+            >
               <XMarkIcon />
             </ActionButton>
-            <ActionButton onClick={() => triggerSwipe('up')} ariaLabel="Смотрел">
+            <ActionButton
+              onClick={() => triggerSwipe('up')}
+              ariaLabel="Смотрел"
+              label="Уже видел"
+            >
               <EyeIcon />
             </ActionButton>
-            <ActionButton onClick={() => triggerSwipe('right')} ariaLabel="Нравится" isPrimary>
+            <ActionButton
+              onClick={() => triggerSwipe('right')}
+              ariaLabel="Нравится"
+              isPrimary
+              label="Хочу"
+            >
               <HeartIcon />
             </ActionButton>
           </div>
+          {/* Discoverability hint. Shown always — keyboard shortcuts are
+              invisible without a label and drag-on-desktop is non-obvious
+              for a metaphor most users associate with phones. */}
+          <p className="text-center text-[11px] text-brand-muted/70 mt-3 hidden md:block">
+            Жми кнопки, тяни карточку мышкой или используй клавиши
+            <kbd className="mx-1 px-1.5 py-0.5 rounded bg-white/10 text-white text-[10px]">←</kbd>
+            <kbd className="mx-0.5 px-1.5 py-0.5 rounded bg-white/10 text-white text-[10px]">↑</kbd>
+            <kbd className="mx-1 px-1.5 py-0.5 rounded bg-white/10 text-white text-[10px]">→</kbd>
+          </p>
+          <p className="text-center text-[11px] text-brand-muted/70 mt-3 md:hidden">
+            Свайпай: ← не моё · ↑ уже видел · → хочу
+          </p>
         </div>
       </div>
     </div>
@@ -380,19 +405,25 @@ const ActionButton: React.FC<{
   children: React.ReactNode;
   ariaLabel: string;
   isPrimary?: boolean;
-}> = ({ onClick, children, ariaLabel, isPrimary }) => (
-  <button
-    onClick={onClick}
-    aria-label={ariaLabel}
-    className={`rounded-full p-4 flex items-center justify-center transition-all duration-300 ease-in-out transform hover:scale-110
-            ${
-              isPrimary
-                ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/40 w-20 h-20'
-                : 'bg-white/10 text-white w-16 h-16 hover:bg-white/20'
-            }`}
-  >
-    {children}
-  </button>
+  label?: string;
+}> = ({ onClick, children, ariaLabel, isPrimary, label }) => (
+  <div className="flex flex-col items-center gap-1.5">
+    <button
+      onClick={onClick}
+      aria-label={ariaLabel}
+      className={`rounded-full flex items-center justify-center transition-all duration-200 ease-out transform hover:scale-110 active:scale-95
+              ${
+                isPrimary
+                  ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/50 w-16 h-16 md:w-20 md:h-20'
+                  : 'bg-white/10 text-white w-14 h-14 md:w-16 md:h-16 hover:bg-white/20'
+              }`}
+    >
+      {children}
+    </button>
+    {label && (
+      <span className="text-[11px] text-brand-muted font-medium">{label}</span>
+    )}
+  </div>
 );
 
 export default TrailerCard;
