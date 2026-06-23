@@ -156,6 +156,47 @@ export function useLibrary(user: AuthUser | null, authLoading: boolean) {
     [user, post],
   );
 
+  // Undo: drop the verdict server-side AND remove from any local list +
+  // excluded set so the title can flow through the deck again.
+  const handleUndo = useCallback(
+    async (movie: Movie) => {
+      setLikedMovies((prev) => {
+        if (!prev.some((m) => m.id === movie.id)) return prev;
+        const next = prev.filter((m) => m.id !== movie.id);
+        if (!user) localStorage.setItem(LS.liked, JSON.stringify(next));
+        return next;
+      });
+      setWatchedMovies((prev) => {
+        if (!prev.some((m) => m.id === movie.id)) return prev;
+        const next = prev.filter((m) => m.id !== movie.id);
+        if (!user) localStorage.setItem(LS.watched, JSON.stringify(next));
+        return next;
+      });
+      setDislikedIds((prev) => {
+        if (!prev.has(movie.id)) return prev;
+        const next = new Set(prev);
+        next.delete(movie.id);
+        if (!user) localStorage.setItem(LS.disliked, JSON.stringify([...next]));
+        return next;
+      });
+      if (user) {
+        try {
+          // api.del doesn't take a body — use the underlying request via
+          // a typed fetch wrapper to send the (tmdbId, contentType) payload.
+          await fetch('/api/swipes', {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tmdbId: movie.id, contentType: movie.contentType }),
+          });
+        } catch {
+          /* best-effort; local state already updated */
+        }
+      }
+    },
+    [user],
+  );
+
   // Titles already acted on are kept out of the deck.
   const excludedIds = useMemo(() => {
     const ids = new Set<number>(dislikedIds);
@@ -164,5 +205,13 @@ export function useLibrary(user: AuthUser | null, authLoading: boolean) {
     return ids;
   }, [dislikedIds, likedMovies, watchedMovies]);
 
-  return { likedMovies, watchedMovies, excludedIds, handleLike, handleDislike, handleWatched };
+  return {
+    likedMovies,
+    watchedMovies,
+    excludedIds,
+    handleLike,
+    handleDislike,
+    handleWatched,
+    handleUndo,
+  };
 }

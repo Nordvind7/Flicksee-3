@@ -9,6 +9,7 @@ interface SwipeContainerProps {
   onLike: (movie: Movie) => void;
   onDislike: (movie: Movie) => void;
   onWatched: (movie: Movie) => void;
+  onUndo?: (movie: Movie) => void | Promise<void>;
   filters: FilterState;
   genreMap: Map<number, string>;
   excludedIds: Set<number>;
@@ -17,9 +18,9 @@ interface SwipeContainerProps {
 const PRELOAD_COUNT = 4;
 const LOAD_MORE_THRESHOLD = 5;
 
-const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWatched, filters, genreMap, excludedIds }) => {
+const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWatched, onUndo, filters, genreMap, excludedIds }) => {
   const { movies, isLoading, error, loadMoreMovies, hasMore } = useMovies(filters, excludedIds);
-  
+
   const [currentIndex, setCurrentIndex] = useState(() => {
     try {
       const savedIndexRaw = localStorage.getItem('flicksee_swipe_currentIndex');
@@ -31,6 +32,9 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWa
     }
     return 0;
   });
+  // Small undo stack: last swipe is reversible. Capped at 1 because anything
+  // deeper makes the index/excluded state messy when titles overlap.
+  const [lastSwipe, setLastSwipe] = useState<{ movie: Movie; direction: 'left' | 'right' | 'up' } | null>(null);
 
   const [trailerKeys, setTrailerKeys] = useState<Map<number, string | null>>(new Map());
   const fetchingRef = useRef(new Set<number>());
@@ -86,9 +90,23 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWa
       } else if (direction === 'up') {
         onWatched(movie);
       }
+      setLastSwipe({ movie, direction });
     },
     [currentIndex, onLike, onDislike, onWatched],
   );
+
+  const undoLast = useCallback(async () => {
+    if (!lastSwipe) return;
+    if (onUndo) await onUndo(lastSwipe.movie);
+    const newIndex = Math.max(0, currentIndex - 1);
+    setCurrentIndex(newIndex);
+    try {
+      localStorage.setItem('flicksee_swipe_currentIndex', String(newIndex));
+    } catch {
+      /* ignore */
+    }
+    setLastSwipe(null);
+  }, [lastSwipe, onUndo, currentIndex]);
 
   // Desktop keyboard shortcuts — arrows mirror the swipe gestures and make
   // the app usable without ever touching the mouse. Discoverable via the
@@ -109,11 +127,14 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWa
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         handleSwipe('up', top);
+      } else if ((e.key === 'z' || e.key === 'Z' || e.key === 'я' || e.key === 'Я') && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        void undoLast();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [movies, currentIndex, handleSwipe]);
+  }, [movies, currentIndex, handleSwipe, undoLast]);
 
   const renderContent = () => {
     const hasMoviesToShow = movies.length > currentIndex;
@@ -147,6 +168,18 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWa
       // fell below the fold. max-w-lg gives ~512px — meaningfully bigger
       // than a phone but still card-shaped.
       <div className="relative w-full max-w-lg h-full mx-auto flex items-center justify-center px-2">
+        {lastSwipe && (
+          <button
+            onClick={() => void undoLast()}
+            className="absolute top-3 right-3 z-20 flex items-center gap-1.5 text-xs font-medium text-ink-100 hover:text-white px-3 py-1.5 rounded-full ring-1 ring-white/10 hover:ring-white/20 transition-all"
+            style={{ backgroundColor: 'rgba(22, 22, 26, 0.85)', backdropFilter: 'blur(8px)' }}
+            aria-label="Вернуть последний свайп"
+            title="Cmd/Ctrl + Z"
+          >
+            <span>↶</span>
+            Вернуть
+          </button>
+        )}
         {visibleMovies.map((movie, index) => {
           return (
             <TrailerCard

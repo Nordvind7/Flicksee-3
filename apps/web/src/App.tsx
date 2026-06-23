@@ -27,7 +27,7 @@ const YANDEX_METRIKA_ID = 104544058;
 const App: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
   const { unlock } = useSound();
-  const { likedMovies, watchedMovies, excludedIds, handleLike, handleDislike, handleWatched } =
+  const { likedMovies, watchedMovies, excludedIds, handleLike, handleDislike, handleWatched, handleUndo } =
     useLibrary(user, authLoading);
   const location = useLocation();
 
@@ -108,6 +108,7 @@ const App: React.FC = () => {
               onLike={handleLike}
               onDislike={handleDislike}
               onWatched={handleWatched}
+              onUndo={handleUndo}
               filters={filters}
               genreMap={genreMap[filters.contentType]}
               excludedIds={excludedIds}

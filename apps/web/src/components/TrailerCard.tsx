@@ -4,6 +4,7 @@ import { ContentType } from '../types';
 import { TMDB_BACKDROP_BASE_URL } from '../constants';
 import { HeartIcon, XMarkIcon, EyeIcon, StarIcon, MutedIcon, UnmutedIcon } from './icons';
 import { useSound } from '../sound/SoundContext';
+import WatchProvidersRow from './WatchProvidersRow';
 
 declare global {
   interface Window {
@@ -339,6 +340,9 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, tra
                     </span>
                   ))}
                 </div>
+              )}
+              {isActive && (
+                <WatchProvidersRow tmdbId={movie.id} contentType={movie.contentType} compact />
               )}
               <div>
                 <p

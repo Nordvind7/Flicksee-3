@@ -141,4 +141,34 @@ export default async function libraryRoutes(app: FastifyInstance) {
   app.get('/watched', { onRequest: [app.authenticate] }, async (req) => {
     return { items: await listByAction(req.user.sub, 'SEEN') };
   });
+
+  // Undo a swipe. Removes the user's verdict on (tmdbId, contentType) and any
+  // friend-match the pair produced — semantic "really undo" rather than just
+  // hiding the row.
+  const undoSchema = z.object({
+    tmdbId: z.number().int().positive(),
+    contentType: z.enum(['movie', 'tv']),
+  });
+  app.delete('/swipes', { onRequest: [app.authenticate] }, async (req, reply) => {
+    const parsed = undoSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'invalid undo payload' });
+    }
+    const { tmdbId, contentType } = parsed.data;
+    const dbType = toDbType(contentType);
+    const userId = req.user.sub;
+    await prisma.$transaction([
+      prisma.match.deleteMany({
+        where: {
+          OR: [{ userAId: userId }, { userBId: userId }],
+          tmdbId,
+          contentType: dbType,
+        },
+      }),
+      prisma.swipe.deleteMany({
+        where: { userId, tmdbId, contentType: dbType },
+      }),
+    ]);
+    return { ok: true };
+  });
 }
