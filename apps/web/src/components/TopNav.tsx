@@ -52,10 +52,16 @@ const TopNav: React.FC = () => {
       <div className="max-w-5xl mx-auto flex items-center justify-between gap-3 px-4 py-3">
         <button
           onClick={() => navigate('/')}
-          className="text-xl font-black text-accent tracking-tightest hover:opacity-80 transition-opacity"
-          style={{ color: '#E50914' }}
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          aria-label="Flicksee — на главную"
         >
-          Flicksee
+          <img src="/logo.jpg" alt="" className="w-8 h-8 rounded-lg object-cover ring-1 ring-white/10" />
+          <span
+            className="text-xl font-black tracking-tightest hidden sm:inline"
+            style={{ color: '#E50914' }}
+          >
+            Flicksee
+          </span>
         </button>
         <nav className="flex items-center gap-1">
           <NavLink to="/" active={false} ariaLabel="Свайпать трейлеры">

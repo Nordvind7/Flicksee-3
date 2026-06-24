@@ -3,7 +3,7 @@ Allow: /
 Disallow: /api/
 
 # Sitemap location for crawlers
-Sitemap: https://flicksee.app/sitemap.xml
+Sitemap: https://flicksee.ru/sitemap.xml
 
 # Telegram-friendly: full crawl
 User-agent: TelegramBot

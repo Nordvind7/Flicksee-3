@@ -54,9 +54,13 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView, filters, setFilte
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={() => navigate('/')}
-            className="text-2xl font-black text-accent tracking-tightest hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            aria-label="Flicksee — на главную"
           >
-            Flicksee
+            <img src="/logo.jpg" alt="" className="w-8 h-8 rounded-lg object-cover ring-1 ring-white/10" />
+            <span className="text-xl font-black text-accent tracking-tightest hidden sm:inline">
+              Flicksee
+            </span>
           </button>
           <div className="hidden sm:block">
             <LoginButton />

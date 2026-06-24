@@ -625,7 +625,7 @@ const POSTS: BlogPost[] = [
   },
 ];
 
-const SITE_URL = 'https://flicksee.app';
+const SITE_URL = 'https://flicksee.ru';
 
 // ──────────────── SEO head-manager: title + description + OG + Twitter + JSON-LD
 function setHeadTag(selector: string, attrs: Record<string, string>): () => void {
