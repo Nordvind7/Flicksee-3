@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './auth/AuthContext';
+import { LibraryProvider } from './auth/LibraryContext';
 import { SoundProvider } from './sound/SoundContext';
 import './index.css';
 
@@ -17,9 +18,11 @@ root.render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <SoundProvider>
-          <App />
-        </SoundProvider>
+        <LibraryProvider>
+          <SoundProvider>
+            <App />
+          </SoundProvider>
+        </LibraryProvider>
       </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>

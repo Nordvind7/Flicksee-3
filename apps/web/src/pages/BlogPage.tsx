@@ -713,6 +713,17 @@ function useArticleMeta(post: BlogPost | undefined, posterPath?: string | null):
         keywords: post.keywords.join(', '),
         inLanguage: 'ru-RU',
       }),
+      // JSON-LD Breadcrumb — gives Google a rich-snippet breadcrumb in SERP,
+      // higher CTR than plain blue URL.
+      setJsonLd('breadcrumb', {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Flicksee', item: SITE_URL },
+          { '@type': 'ListItem', position: 2, name: 'Блог', item: `${SITE_URL}/blog` },
+          { '@type': 'ListItem', position: 3, name: post.title, item: url },
+        ],
+      }),
     ];
 
     return () => {
@@ -896,10 +907,22 @@ const PostView: React.FC<{ slug: string }> = ({ slug }) => {
     );
   }
 
+  // Insert an inline registration push after the first section (typically the
+  // intro paragraph). Conversion-focused: phrased as a useful tip, not as
+  // "register now". Hidden when user already logged in.
+  const sectionsWithInlineCTA = post.sections.flatMap((s, i) =>
+    i === 1
+      ? [
+          s,
+          { kind: 'inlineCta' as const },
+        ]
+      : [s],
+  );
+
   return (
     <article className="min-h-screen text-ink-50" style={{ backgroundColor: '#0a0a0b' }}>
       <TopNav />
-      <div className="max-w-2xl mx-auto p-4 md:p-6">
+      <div className="max-w-2xl mx-auto p-4 md:p-6 pb-32">
         <button
           onClick={() => navigate('/blog')}
           className="flex items-center gap-1 text-ink-200 hover:text-white transition-colors mb-6"
@@ -919,11 +942,38 @@ const PostView: React.FC<{ slug: string }> = ({ slug }) => {
           <span>{post.readingMinutes} мин чтения</span>
         </div>
         <div>
-          {post.sections.map((section, i) => (
-            <SectionRenderer key={i} section={section} />
-          ))}
+          {sectionsWithInlineCTA.map((section, i) =>
+            section.kind === 'inlineCta' ? (
+              <InlineRegistrationPush key={`cta-${i}`} />
+            ) : (
+              <SectionRenderer key={i} section={section} />
+            ),
+          )}
         </div>
-        <div className="mt-12 pt-8 border-t border-white/5">
+
+        {/* Breadcrumbs (visible + JSON-LD via setJsonLd in useArticleMeta) */}
+        <nav
+          className="mt-10 pt-6 border-t border-white/5 text-xs text-ink-300"
+          aria-label="Breadcrumb"
+        >
+          <ol className="flex items-center gap-1.5 flex-wrap">
+            <li>
+              <Link to="/" className="hover:text-white transition-colors">
+                Flicksee
+              </Link>
+            </li>
+            <li className="opacity-50">/</li>
+            <li>
+              <Link to="/blog" className="hover:text-white transition-colors">
+                Блог
+              </Link>
+            </li>
+            <li className="opacity-50">/</li>
+            <li className="text-ink-100 truncate max-w-[60%]">{post.title}</li>
+          </ol>
+        </nav>
+
+        <div className="mt-8 pt-6 border-t border-white/5">
           <p className="text-sm text-ink-200 mb-3">Читайте также:</p>
           <div className="flex flex-col gap-2">
             {POSTS.filter((p) => p.slug !== post.slug)
@@ -940,9 +990,78 @@ const PostView: React.FC<{ slug: string }> = ({ slug }) => {
           </div>
         </div>
       </div>
+
+      <StickyArticleCta postTitle={post.title} />
     </article>
   );
 };
+
+// Sticky bottom CTA on article pages: appears after the user scrolls past
+// the fold. Conversion gate from SEO traffic to active session.
+const StickyArticleCta: React.FC<{ postTitle: string }> = ({ postTitle }) => {
+  const [show, setShow] = React.useState(false);
+  useEffect(() => {
+    const onScroll = () => setShow(window.scrollY > 400);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  if (!show) return null;
+  return (
+    <div
+      className="fixed bottom-3 inset-x-3 sm:bottom-5 sm:left-auto sm:right-5 sm:max-w-sm z-40 rounded-2xl ring-1 ring-white/10 shadow-card-lg backdrop-blur-md"
+      style={{ backgroundColor: 'rgba(22, 22, 26, 0.92)' }}
+    >
+      <div className="p-3 sm:p-4 flex items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs sm:text-sm text-ink-100 font-medium leading-tight">
+            Хочешь свайпать эти фильмы прямо сейчас?
+          </p>
+          <p className="text-[11px] text-ink-300 mt-0.5 leading-tight">
+            Без регистрации, можно начать с одного тапа
+          </p>
+        </div>
+        <Link
+          to="/"
+          className="shrink-0 text-sm font-bold text-white px-4 py-2 rounded-full transition-all hover:scale-[1.04] active:scale-95 whitespace-nowrap"
+          style={{
+            backgroundColor: '#E50914',
+            boxShadow: '0 4px 12px rgba(229, 9, 20, 0.45)',
+          }}
+          aria-label={`Открыть свайп — ${postTitle}`}
+        >
+          Свайпать
+        </Link>
+      </div>
+    </div>
+  );
+};
+
+// Inline conversion block — appears after the first text section of every
+// article. Reframes the article as "useful, but the actual product solves
+// this faster" without being sleazy.
+const InlineRegistrationPush: React.FC = () => (
+  <div
+    className="my-8 rounded-2xl p-5 ring-1"
+    style={{
+      backgroundColor: 'rgba(229, 9, 20, 0.06)',
+      borderColor: 'rgba(229, 9, 20, 0.2)',
+    }}
+  >
+    <p className="text-ink-50 font-semibold mb-1.5">⚡ Не только подборки</p>
+    <p className="text-ink-100 text-sm leading-relaxed mb-3">
+      На Flicksee можно свайпать трейлеры этих и тысяч других фильмов: 30 секунд — вердикт,
+      следующий. С другом — автоматические матчи через Telegram, без споров о выборе.
+    </p>
+    <Link
+      to="/"
+      className="inline-flex items-center gap-1.5 text-sm font-bold text-white px-4 py-2 rounded-full transition-all hover:scale-[1.04]"
+      style={{ backgroundColor: '#E50914' }}
+    >
+      Попробовать бесплатно →
+    </Link>
+  </div>
+);
 
 const BlogPage: React.FC = () => {
   const { slug } = useParams<{ slug?: string }>();

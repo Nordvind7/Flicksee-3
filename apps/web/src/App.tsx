@@ -6,13 +6,17 @@ import LikedList from './components/LikedList';
 import type { FilterState, Genre } from './types';
 import { ContentType } from './types';
 import { fetchGenres } from './services/tmdb';
-import { useAuth } from './auth/AuthContext';
 import { useSound } from './sound/SoundContext';
-import { useLibrary } from './hooks/useLibrary';
+import { useLibraryContext } from './auth/LibraryContext';
 import FriendsPage from './pages/FriendsPage';
 import FriendProfilePage from './pages/FriendProfilePage';
 import MatchPage from './pages/MatchPage';
-import BlogPage from './pages/BlogPage';
+// Code-split the blog so SEO landings don't pull the main swipe app's
+// dependencies (TrailerCard, YouTube SDK, etc) when a user arrives from
+// Direct/SERP straight onto an article. Smaller LCP for the highest-CTR
+// traffic source.
+const BlogPage = React.lazy(() => import('./pages/BlogPage'));
+import NotFoundPage from './pages/NotFoundPage';
 import SplashScreen from './components/SplashScreen';
 import SearchOverlay from './components/SearchOverlay';
 
@@ -26,10 +30,9 @@ declare global {
 const YANDEX_METRIKA_ID = 104544058;
 
 const App: React.FC = () => {
-  const { user, loading: authLoading } = useAuth();
   const { unlock } = useSound();
   const { likedMovies, watchedMovies, excludedIds, handleLike, handleDislike, handleWatched, handleUndo } =
-    useLibrary(user, authLoading);
+    useLibraryContext();
   const location = useLocation();
 
   const [view, setView] = useState<'swipe' | 'liked' | 'watched'>('swipe');
@@ -163,12 +166,29 @@ const App: React.FC = () => {
 
   return (
     <Routes>
+      <Route path="/" element={mainShell} />
+      <Route path="/liked" element={mainShell} />
+      <Route path="/watched" element={mainShell} />
       <Route path="/friends" element={<FriendsPage />} />
       <Route path="/friends/:id" element={<FriendProfilePage />} />
       <Route path="/matches/:id" element={<MatchPage />} />
-      <Route path="/blog" element={<BlogPage />} />
-      <Route path="/blog/:slug" element={<BlogPage />} />
-      <Route path="*" element={mainShell} />
+      <Route
+        path="/blog"
+        element={
+          <React.Suspense fallback={<div className="min-h-screen" style={{ backgroundColor: '#0a0a0b' }} />}>
+            <BlogPage />
+          </React.Suspense>
+        }
+      />
+      <Route
+        path="/blog/:slug"
+        element={
+          <React.Suspense fallback={<div className="min-h-screen" style={{ backgroundColor: '#0a0a0b' }} />}>
+            <BlogPage />
+          </React.Suspense>
+        }
+      />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 };
