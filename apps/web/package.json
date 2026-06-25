@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && pnpm prerender",
+    "build:only": "vite build",
+    "prerender": "tsx scripts/prerender.ts",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."
@@ -24,6 +26,7 @@
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.22.4",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
