@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import TopNav from '../components/TopNav';
+import Footer from '../components/Footer';
 
 // Hard 404 with explicit messaging. Sets <title> properly so the browser
 // tab shows "404 — Flicksee" instead of a stale article title. Static
@@ -59,6 +60,7 @@ const NotFoundPage: React.FC = () => {
           </Link>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

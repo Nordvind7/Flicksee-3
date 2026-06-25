@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getMatch, markMatchSeen, type MatchDetail } from '../lib/api';
 import TopNav from '../components/TopNav';
+import Footer from '../components/Footer';
 
 const MatchPage: React.FC = () => {
   const { id = '' } = useParams<{ id: string }>();
@@ -86,6 +87,7 @@ const MatchPage: React.FC = () => {
           )}
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

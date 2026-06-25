@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useFriendProfile } from '../hooks/useFriendProfile';
 import TopNav from '../components/TopNav';
+import Footer from '../components/Footer';
 
 const FriendProfilePage: React.FC = () => {
   const { id = '' } = useParams<{ id: string }>();
@@ -92,6 +93,7 @@ const FriendProfilePage: React.FC = () => {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 };
