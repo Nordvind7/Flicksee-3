@@ -21,6 +21,24 @@
     <priority>0.3</priority>
   </url>
   <url>
+    <loc>https://flicksee.ru/blog/top-rossiyskih-filmov</loc>
+    <lastmod>2026-06-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://flicksee.ru/blog/luchshie-koreyskie-filmy</loc>
+    <lastmod>2026-06-26</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://flicksee.ru/blog/filmy-pro-puteshestviya</loc>
+    <lastmod>2026-06-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://flicksee.ru/blog/luchshie-filmy-2024-2025</loc>
     <lastmod>2026-06-24</lastmod>
     <changefreq>monthly</changefreq>
