@@ -11,14 +11,12 @@ import { useLibraryContext } from './auth/LibraryContext';
 import FriendsPage from './pages/FriendsPage';
 import FriendProfilePage from './pages/FriendProfilePage';
 import MatchPage from './pages/MatchPage';
-// Code-split the blog so SEO landings don't pull the main swipe app's
-// dependencies (TrailerCard, YouTube SDK, etc) when a user arrives from
-// Direct/SERP straight onto an article. Smaller LCP for the highest-CTR
-// traffic source.
 const BlogPage = React.lazy(() => import('./pages/BlogPage'));
+const PrivacyPage = React.lazy(() => import('./pages/PrivacyPage'));
 import NotFoundPage from './pages/NotFoundPage';
 import SplashScreen from './components/SplashScreen';
 import SearchOverlay from './components/SearchOverlay';
+import CookieNotice from './components/CookieNotice';
 
 // Extend the Window interface for TypeScript to recognize the Yandex Metrika function
 declare global {
@@ -161,6 +159,7 @@ const App: React.FC = () => {
         onLike={handleLike}
         excludedIds={excludedIds}
       />
+      <CookieNotice />
     </div>
   );
 
@@ -185,6 +184,14 @@ const App: React.FC = () => {
         element={
           <React.Suspense fallback={<div className="min-h-screen" style={{ backgroundColor: '#0a0a0b' }} />}>
             <BlogPage />
+          </React.Suspense>
+        }
+      />
+      <Route
+        path="/privacy"
+        element={
+          <React.Suspense fallback={<div className="min-h-screen" style={{ backgroundColor: '#0a0a0b' }} />}>
+            <PrivacyPage />
           </React.Suspense>
         }
       />

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeftIcon } from '../components/icons';
 import TopNav from '../components/TopNav';
+import Footer from '../components/Footer';
 import MoviePickCard, { type MoviePick } from '../components/MoviePickCard';
 
 // Static MVP content. Each post is hand-written, structured for SEO (H2
@@ -864,6 +865,7 @@ const ListView: React.FC = () => {
           ))}
         </div>
       </div>
+      <Footer />
     </div>
   );
 };
@@ -991,6 +993,7 @@ const PostView: React.FC<{ slug: string }> = ({ slug }) => {
         </div>
       </div>
 
+      <Footer />
       <StickyArticleCta postTitle={post.title} />
     </article>
   );

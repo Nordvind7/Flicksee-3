@@ -3,6 +3,7 @@ import { useFriends } from '../hooks/useFriends';
 import FriendCard from '../components/FriendCard';
 import { FriendsIcon } from '../components/icons';
 import TopNav from '../components/TopNav';
+import Footer from '../components/Footer';
 
 const FriendsPage: React.FC = () => {
   const { friends, loading, invite } = useFriends();
@@ -69,6 +70,7 @@ const FriendsPage: React.FC = () => {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 };
