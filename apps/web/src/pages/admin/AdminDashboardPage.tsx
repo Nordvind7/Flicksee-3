@@ -14,6 +14,8 @@ const AdminDashboardPage: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Bumping this re-runs the loader effect — used by the Retry button.
+  const [retryCounter, setRetryCounter] = useState(0);
 
   useEffect(() => {
     if (!user?.isAdmin) return;
@@ -37,7 +39,12 @@ const AdminDashboardPage: React.FC = () => {
       cancelled = true;
       clearInterval(t);
     };
-  }, [user?.isAdmin]);
+  }, [user?.isAdmin, retryCounter]);
+
+  const ageSeconds = data
+    ? Math.floor((Date.now() - new Date(data.generatedAt).getTime()) / 1000)
+    : 0;
+  const isStale = data ? ageSeconds > 60 : false;
 
   if (authLoading) {
     return <div className="min-h-screen bg-brand-background" />;
@@ -48,22 +55,48 @@ const AdminDashboardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-brand-background text-brand-secondary p-4 sm:p-8">
-      <header className="mb-6">
+      <header className="mb-6 flex items-baseline gap-3 flex-wrap">
         <h1 className="text-2xl font-bold">Flicksee Admin</h1>
         <p className="text-sm opacity-60">
           {data
             ? `Обновлено ${new Date(data.generatedAt).toLocaleTimeString('ru-RU')}`
             : 'Загрузка…'}
         </p>
+        {isStale && (
+          <span className="text-xs text-yellow-400 opacity-80">⚠ данные устарели</span>
+        )}
       </header>
 
       {error && (
-        <div className="mb-6 rounded border border-red-500 bg-red-500/10 p-4 text-red-300">
-          Ошибка: {error}
+        <div className="mb-6 rounded border border-red-500 bg-red-500/10 p-4 text-red-300 flex items-center justify-between gap-3">
+          <span>Ошибка: {error}</span>
+          <button
+            onClick={() => {
+              setError(null);
+              setRetryCounter((c) => c + 1);
+            }}
+            className="px-3 py-1 rounded bg-red-500/20 hover:bg-red-500/30 text-sm shrink-0"
+          >
+            Повторить
+          </button>
         </div>
       )}
 
-      {!data && !error && <div className="opacity-60">Загружаю метрики…</div>}
+      {!data && !error && (
+        <div className="space-y-4 animate-pulse">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="h-20 rounded-lg bg-white/5 border border-white/10" />
+            ))}
+          </div>
+          <div className="h-48 rounded-lg bg-white/5 border border-white/10" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-56 rounded-lg bg-white/5 border border-white/10" />
+            ))}
+          </div>
+        </div>
+      )}
 
       {data && (
         <>
