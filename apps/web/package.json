@@ -14,9 +14,13 @@
   },
   "dependencies": {
     "@flicksee/shared": "workspace:*",
+    "@types/canvas-confetti": "^1.9.0",
+    "canvas-confetti": "^1.9.4",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-router-dom": "^7.18.0"
+    "react-qr-code": "^2.2.0",
+    "react-router-dom": "^7.18.0",
+    "recharts": "^3.9.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

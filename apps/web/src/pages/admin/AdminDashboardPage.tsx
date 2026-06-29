@@ -5,6 +5,8 @@ import { useAuth } from '../../auth/AuthContext';
 import MetricCard from './components/MetricCard';
 import TopContentTable from './components/TopContentTable';
 import FunnelBlock from './components/FunnelBlock';
+import TrendChart from './components/TrendChart';
+import DonutChart from './components/DonutChart';
 
 const REFRESH_MS = 30_000;
 
@@ -109,6 +111,24 @@ const AdminDashboardPage: React.FC = () => {
               <TopContentTable title="Топ лайков (7d)" rows={data.topContent.likes7d} countLabel="❤" />
               <TopContentTable title="Топ дислайков (7d)" rows={data.topContent.dislikes7d} countLabel="👎" />
               <TopContentTable title="Топ рекомендаций (30d)" rows={data.topContent.recommend30d} countLabel="⭐" />
+            </div>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-lg font-semibold mb-3 opacity-80">Тренды (30 дней)</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <TrendChart title="Новые юзеры" data={data.trends30d.newUsers} kind="bar" color="#E50914" />
+              <TrendChart title="Свайпы" data={data.trends30d.swipes} kind="line" color="#ff6a3d" />
+              <TrendChart title="Матчи" data={data.trends30d.matches} kind="line" color="#ffcd3d" />
+              <DonutChart
+                title="Свайпы по типу (7d)"
+                data={[
+                  { name: 'LIKE', value: data.activity.swipesByAction7d.LIKE, color: '#E50914' },
+                  { name: 'DISLIKE', value: data.activity.swipesByAction7d.DISLIKE, color: '#888888' },
+                  { name: 'SEEN', value: data.activity.swipesByAction7d.SEEN, color: '#ffcd3d' },
+                  { name: 'RECOMMEND', value: data.activity.swipesByAction7d.RECOMMEND, color: '#ff6a3d' },
+                ]}
+              />
             </div>
           </section>
 
