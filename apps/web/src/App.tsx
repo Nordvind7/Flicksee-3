@@ -23,6 +23,7 @@ const AdminDashboardPage = React.lazy(() => import('./pages/admin/AdminDashboard
 const AdminBroadcastPage = React.lazy(() => import('./pages/admin/AdminBroadcastPage'));
 import NotFoundPage from './pages/NotFoundPage';
 import SplashScreen from './components/SplashScreen';
+const AboutLanding = React.lazy(() => import('./pages/about/AboutLanding'));
 // SearchOverlay не нужен пока юзер не нажмёт Cmd+K / иконку поиска.
 const SearchOverlay = React.lazy(() => import('./components/SearchOverlay'));
 import CookieNotice from './components/CookieNotice';
@@ -171,17 +172,21 @@ const App: React.FC = () => {
   //  - юзер явно зашёл на /about (маркетинг / share / Директ).
   // Залогиненный на / увидит splash только если auto-skip useEffect ещё не
   // отработал (1 кадр) — здесь нужна вторая проверка чтобы не моргнуло.
-  if ((!hasInteracted && isHomeRoute && !authLoading && !user) || isAboutRoute) {
+  if (isAboutRoute) {
+    // Cold-traffic landing. Splash still shows on '/' for unauth visitors who
+    // arrived via a friend's deep-link — see comment above.
+    return (
+      <React.Suspense fallback={<div className="min-h-screen bg-brand-background" />}>
+        <AboutLanding />
+      </React.Suspense>
+    );
+  }
+  if (!hasInteracted && isHomeRoute && !authLoading && !user) {
     return (
       <SplashScreen
         onStart={() => {
-          // This tap is the user gesture that unlocks autoplay-with-sound.
           unlock();
           setHasInteracted(true);
-          // Если зашли через маркетинговую ссылку /about — увидим splash и
-          // на «Начать» нужно перейти на / иначе isAboutRoute остаётся true
-          // и splash покажется снова.
-          if (isAboutRoute) navigate('/');
         }}
       />
     );
