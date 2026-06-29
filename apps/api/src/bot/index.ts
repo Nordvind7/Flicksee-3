@@ -7,7 +7,11 @@ let _bot: Telegraf | null = null;
 // Lazy-init so importing this module never crashes a context that doesn't
 // have TELEGRAM_BOT_TOKEN set.
 export function getBot(): Telegraf {
-  if (!_bot) _bot = new Telegraf(config.TELEGRAM_BOT_TOKEN);
+  if (!_bot) {
+    _bot = new Telegraf(config.TELEGRAM_BOT_TOKEN, {
+      telegram: { apiRoot: config.TELEGRAM_API_ROOT },
+    });
+  }
   return _bot;
 }
 
@@ -18,12 +22,31 @@ export async function startBot(): Promise<void> {
   if (config.BOT_MODE === 'polling') {
     // launch() resolves only when polling shuts down; do not await.
     void bot.launch();
+    return;
   }
-  // webhook mode: src/routes/bot.ts forwards updates to bot.handleUpdate.
+  // Webhook mode: src/routes/bot.ts forwards updates to bot.handleUpdate.
+  // We self-register the webhook on every boot so it auto-heals from
+  // Telegram's "disable on persistent 5xx" guard (which fired once during
+  // the certbot nginx reload).
+  const webhookUrl = `${config.WEB_PUBLIC_URL.replace(/\/$/, '')}/api/bot/webhook`;
+  try {
+    await bot.telegram.setWebhook(webhookUrl, {
+      secret_token: config.TELEGRAM_BOT_WEBHOOK_SECRET,
+    });
+    console.log(`webhook registered: ${webhookUrl}`);
+  } catch (err) {
+    console.warn('setWebhook failed (will retry on next restart)', err);
+  }
 }
 
 export async function stopBot(): Promise<void> {
-  if (_bot) _bot.stop('app shutdown');
+  if (!_bot) return;
+  try {
+    _bot.stop('app shutdown');
+  } catch {
+    // Telegraf throws "Bot is not running!" if launch() was never called
+    // (webhook mode). Safe to ignore — there's nothing to stop.
+  }
 }
 
 // Best-effort push of a single match. Skips silently when the recipient has

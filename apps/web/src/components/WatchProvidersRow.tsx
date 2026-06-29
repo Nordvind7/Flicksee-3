@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchWatchProviders, type WatchProviders } from '../services/tmdb';
 import type { ContentType } from '../types';
+import { tmdbImg } from '../constants';
 
 // Compact "Где смотреть" strip. Pulls TMDB /watch/providers (RU) on mount
 // and renders up to 6 provider logos that deep-link to JustWatch (TMDB's
@@ -65,7 +66,7 @@ const WatchProvidersRow: React.FC<Props> = ({ tmdbId, contentType, compact }) =>
         {visible.map((p) => (
           <img
             key={p.provider_id}
-            src={`https://image.tmdb.org/t/p/w92${p.logo_path}`}
+            src={tmdbImg('w92', p.logo_path)}
             alt={p.provider_name}
             title={p.provider_name}
             className={`shrink-0 rounded-md ${compact ? 'w-5 h-5' : 'w-6 h-6'}`}

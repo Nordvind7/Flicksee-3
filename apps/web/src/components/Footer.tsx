@@ -79,18 +79,30 @@ const Footer: React.FC = () => {
             </p>
           </div>
         </div>
-        <div className="mt-8 pt-6 border-t border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-ink-300">
-          <p>© {year} Flicksee. Все права защищены.</p>
-          <p>
-            Данные о фильмах предоставлены{' '}
+        <div className="mt-8 pt-6 border-t border-white/5 flex flex-col gap-3 text-xs text-ink-300">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <p>© {year} Flicksee. Все права защищены.</p>
+            {/* TMDB attribution — per https://developer.themoviedb.org/docs/faq
+                требуется логотип + дисклеймер. Логотип меньше нашего по заметности. */}
             <a
               href="https://www.themoviedb.org"
               target="_blank"
               rel="noreferrer"
-              className="hover:text-white transition-colors"
+              className="inline-flex items-center gap-2 hover:opacity-80 transition-opacity"
+              aria-label="Powered by The Movie Database"
             >
-              The Movie Database (TMDB)
+              <span
+                className="inline-flex items-center px-1.5 py-0.5 font-bold rounded text-white text-[10px] tracking-wider"
+                style={{ background: 'linear-gradient(90deg, #90CEA1 0%, #01B4E4 100%)' }}
+              >
+                TMDB
+              </span>
+              <span>Данные о фильмах</span>
             </a>
+          </div>
+          <p className="text-[10px] text-ink-400 leading-relaxed max-w-3xl">
+            Этот продукт использует API TMDB, но не одобрен и не сертифицирован TMDB.
+            Логотипы и изображения принадлежат правообладателям.
           </p>
         </div>
       </div>

@@ -1,8 +1,15 @@
+import crypto from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../db';
 import { config } from '../config';
-import { INVITE_TTL_MS, newInviteToken } from '../lib/inviteToken';
 import { canonicalPair } from '../lib/canonicalPair';
+
+// Random 10-char base36 — collision-safe для нашего scale (10к юзеров =
+// 36^10 ≈ 3.7×10^15 space, шанс коллизии ничтожен). Уникальность
+// гарантируется DB constraint + retry.
+function newInviteCode(): string {
+  return crypto.randomBytes(8).toString('base64url').slice(0, 10).toLowerCase();
+}
 
 // Resolves the friendship row for the canonical pair, or returns null.
 async function getFriendship(currentUserId: string, otherId: string) {
@@ -12,23 +19,45 @@ async function getFriendship(currentUserId: string, otherId: string) {
 }
 
 export default async function friendsRoutes(app: FastifyInstance) {
-  // Mint a single-use Telegram deeplink token for the current user.
+  // Возвращает PERSONAL permanent invite link юзера. Не одноразовая, не
+  // expire'ит — любой кто перейдёт станет другом. Код генерируется при
+  // первом запросе и сохраняется на User.inviteCode (см. миграцию).
   app.post(
     '/friends/invite',
     {
       onRequest: [app.authenticate],
-      config: { rateLimit: { max: 10, timeWindow: '1 hour' } },
+      config: { rateLimit: { max: 30, timeWindow: '1 hour' } },
     },
-    async (req) => {
-      const token = newInviteToken();
-      const expiresAt = new Date(Date.now() + INVITE_TTL_MS);
-      await prisma.invite.create({
-        data: { token, creatorId: req.user.sub, expiresAt },
-      });
+    async (req, reply) => {
+      const userId = req.user.sub;
+      let user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user) return reply.status(404).send({ error: 'user not found' });
+
+      // Lazy-init: если у юзера ещё нет кода (например, создан до миграции
+      // или backfill пропустил) — генерируем и сохраняем. retry на коллизии.
+      if (!user.inviteCode) {
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const code = newInviteCode();
+          try {
+            user = await prisma.user.update({
+              where: { id: userId },
+              data: { inviteCode: code },
+            });
+            break;
+          } catch (err) {
+            const code = (err as { code?: string }).code;
+            if (code !== 'P2002') throw err; // не unique-нарушение → real error
+          }
+        }
+        if (!user.inviteCode) return reply.status(500).send({ error: 'failed to generate code' });
+      }
+
+      const token = `add_${user.inviteCode}`;
       return {
         token,
         deeplink: `https://t.me/${config.TELEGRAM_BOT_USERNAME}?start=${token}`,
-        expiresAt: expiresAt.toISOString(),
+        // expiresAt оставлен для backwards compat с фронтом; null = вечный.
+        expiresAt: null,
       };
     },
   );
@@ -73,10 +102,12 @@ export default async function friendsRoutes(app: FastifyInstance) {
       const friend = await prisma.user.findUnique({ where: { id: friendId } });
       if (!friend) return reply.status(404).send({ error: 'user not found' });
 
+      // Watchlist друга = LIKE + RECOMMEND. RECOMMEND-карточки идут с флагом
+      // recommended:true чтобы UI смог нарисовать ✨-бейдж.
       const swipes = await prisma.swipe.findMany({
-        where: { userId: friendId, action: 'LIKE' },
+        where: { userId: friendId, action: { in: ['LIKE', 'RECOMMEND'] } },
         orderBy: { createdAt: 'desc' },
-        select: { tmdbId: true, contentType: true },
+        select: { tmdbId: true, contentType: true, action: true },
       });
       const contents = swipes.length
         ? await prisma.content.findMany({
@@ -99,6 +130,7 @@ export default async function friendsRoutes(app: FastifyInstance) {
             vote_average: c.voteAverage ?? 0,
             release_date: c.releaseDate ?? undefined,
             genre_ids: c.genreIds ?? [],
+            recommended: s.action === 'RECOMMEND',
           };
         })
         .filter((x): x is NonNullable<typeof x> => x !== null);

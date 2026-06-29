@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import type { DashboardData } from '@flicksee/shared';
 import { useAuth } from '../../auth/AuthContext';
 import { api } from '../../lib/api';
+import AdminShell from './AdminShell';
 import MetricCard from './components/MetricCard';
 import TopContentTable from './components/TopContentTable';
 import FunnelBlock from './components/FunnelBlock';
@@ -57,18 +58,15 @@ const AdminDashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-brand-background text-brand-secondary p-4 sm:p-8">
-      <header className="mb-6 flex items-baseline gap-3 flex-wrap">
-        <h1 className="text-2xl font-bold">Flicksee Admin</h1>
-        <p className="text-sm opacity-60">
-          {data
-            ? `Обновлено ${new Date(data.generatedAt).toLocaleTimeString('ru-RU')}`
-            : 'Загрузка…'}
-        </p>
+    <AdminShell>
+      <p className="text-sm opacity-60 mb-6 flex items-baseline gap-3 flex-wrap">
+        {data
+          ? `Обновлено ${new Date(data.generatedAt).toLocaleTimeString('ru-RU')}`
+          : 'Загрузка…'}
         {isStale && (
           <span className="text-xs text-yellow-400 opacity-80">⚠ данные устарели</span>
         )}
-      </header>
+      </p>
 
       {error && (
         <div className="mb-6 rounded border border-red-500 bg-red-500/10 p-4 text-red-300 flex items-center justify-between gap-3">
@@ -173,7 +171,7 @@ const AdminDashboardPage: React.FC = () => {
           </section>
         </>
       )}
-    </div>
+    </AdminShell>
   );
 };
 

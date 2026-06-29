@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getMatch, markMatchSeen, type MatchDetail } from '../lib/api';
 import TopNav from '../components/TopNav';
 import Footer from '../components/Footer';
+import { tmdbImg } from '../constants';
 
 const MatchPage: React.FC = () => {
   const { id = '' } = useParams<{ id: string }>();
@@ -58,7 +59,7 @@ const MatchPage: React.FC = () => {
         {content?.posterPath && (
           <div className="relative rounded-3xl overflow-hidden shadow-card-lg ring-1 ring-white/10 mb-5">
             <img
-              src={`https://image.tmdb.org/t/p/w500${content.posterPath}`}
+              src={tmdbImg('w500', content.posterPath)}
               alt={content.title}
               className="w-full h-auto max-h-[55vh] object-cover"
             />

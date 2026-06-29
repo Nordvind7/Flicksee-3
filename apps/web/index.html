@@ -13,7 +13,7 @@
     />
     <meta name="keywords" content="что посмотреть, выбрать фильм, трейлеры фильмов, фильмы с друзьями, свайп фильмов, Tinder для кино" />
     <meta name="theme-color" content="#0a0a0b" />
-    <meta name="yandex-verification" content="" />
+    <meta name="yandex-verification" content="0fc16a581bf18a9c" />
 
     <!-- Canonical -->
     <link rel="canonical" href="https://flicksee.ru/" />
@@ -91,6 +91,13 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Postеры идут через CF worker — preconnect стартует TLS handshake
+         сразу, экономит ~150ms до первого изображения. -->
+    <link rel="preconnect" href="https://shrill-snow-52f3.artem-scharipov2000.workers.dev" crossorigin />
+    <!-- YouTube iframe API нужен только когда юзер дойдёт до первого
+         трейлера. async загружает параллельно, без блокировки парсинга. -->
+    <link rel="preconnect" href="https://www.youtube.com" />
+    <link rel="dns-prefetch" href="https://i.ytimg.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap"
       rel="stylesheet"
@@ -106,7 +113,28 @@
         /></div
     ></noscript>
     <div id="root"></div>
-    <script src="https://www.youtube.com/iframe_api"></script>
+    <!-- SEO fallback: статический H1 + nav. Не виден юзеру (sr-only),
+         но всегда есть в начальном HTML — краулеры (Яндекс, Google) видят
+         даже если JS не выполнился. После hydrate React-приложение
+         перерисует свой UI выше — этот блок остаётся внизу DOM. -->
+    <div style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;">
+      <h1>Flicksee — свайпай трейлеры фильмов и сериалов, находи кино с друзьями</h1>
+      <p>Сервис для выбора фильма на вечер. Свайпай 30-секундные трейлеры, находи совпадения с друзьями через Telegram-бот. Без регистрации, бесплатно.</p>
+      <nav aria-label="Основные разделы">
+        <a href="/blog">Блог про кино</a>
+        <a href="/friends">Друзья и матчи</a>
+        <a href="/about">О сервисе</a>
+        <a href="/privacy">Политика конфиденциальности</a>
+        <a href="/blog/top-filmov-2024">Топ фильмов 2024</a>
+        <a href="/blog/top-filmov-2023">Топ фильмов 2023</a>
+        <a href="/blog/top-filmov-2022">Топ фильмов 2022</a>
+        <a href="/blog/luchshie-filmy-2024-2025">Лучшие фильмы 2024-2025</a>
+        <a href="/blog/chto-posmotret-s-devushkoy">Что посмотреть с девушкой</a>
+      </nav>
+    </div>
+    <!-- async — не блокируем парсинг. Iframe нужен только когда юзер дойдёт
+         до первой карточки, к этому моменту API уже загрузится. -->
+    <script async src="https://www.youtube.com/iframe_api"></script>
     <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>

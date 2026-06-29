@@ -1,7 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import { config } from '../config';
 
-const TMDB_BASE = 'https://api.themoviedb.org/3';
+// Strip trailing slash so URL composition stays clean even if the env var
+// was set with one.
+const TMDB_BASE = config.TMDB_API_BASE.replace(/\/$/, '');
 
 // Public proxy for TMDB. The client calls /api/tmdb/<path> and we forward to
 // TMDB with the server-side api_key injected — so the key never ships to the

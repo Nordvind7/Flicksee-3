@@ -148,3 +148,35 @@ export interface DashboardData {
   funnel7d: FunnelBlock;
   generatedAt: string;
 }
+
+// ──── Admin broadcast ────────────────────────────────────────────────
+
+export type BroadcastSegment =
+  | 'all_bot_started'
+  | 'active_7d'
+  | 'inactive_14d'
+  | 'with_friends'
+  | 'no_friends'
+  | 'admins_only';
+
+export interface BroadcastSegmentCounts {
+  all_bot_started: number;
+  active_7d: number;
+  inactive_14d: number;
+  with_friends: number;
+  no_friends: number;
+  admins_only: number;
+}
+
+export interface BroadcastJobView {
+  id: string;
+  status: 'running' | 'done' | 'cancelled' | 'failed';
+  startedAt: string;
+  finishedAt?: string;
+  total: number;
+  sent: number;
+  failed: number;
+  cancelRequested: boolean;
+  errors: Array<{ telegramId: string; reason: string }>;
+  preview: { text: string; segment: BroadcastSegment; hasButton: boolean; hasPhoto: boolean };
+}

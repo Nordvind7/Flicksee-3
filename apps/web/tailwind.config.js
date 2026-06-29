@@ -2,6 +2,14 @@
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
+    screens: {
+      xs: '420px', // narrow phones in landscape, iPhone Mini portrait
+      sm: '640px',
+      md: '768px',
+      lg: '1024px',
+      xl: '1280px',
+      '2xl': '1536px',
+    },
     extend: {
       colors: {
         // Legacy tokens (kept stable for components not yet migrated)

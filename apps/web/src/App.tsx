@@ -20,6 +20,7 @@ import MatchPage from './pages/MatchPage';
 const BlogPage = React.lazy(() => import('./pages/BlogPage'));
 const PrivacyPage = React.lazy(() => import('./pages/PrivacyPage'));
 const AdminDashboardPage = React.lazy(() => import('./pages/admin/AdminDashboardPage'));
+const AdminBroadcastPage = React.lazy(() => import('./pages/admin/AdminBroadcastPage'));
 import NotFoundPage from './pages/NotFoundPage';
 import SplashScreen from './components/SplashScreen';
 // SearchOverlay не нужен пока юзер не нажмёт Cmd+K / иконку поиска.
@@ -318,6 +319,14 @@ const App: React.FC = () => {
         element={
           <React.Suspense fallback={<div className="min-h-screen" style={{ backgroundColor: '#0a0a0b' }} />}>
             <AdminDashboardPage />
+          </React.Suspense>
+        }
+      />
+      <Route
+        path="/admin/broadcast"
+        element={
+          <React.Suspense fallback={<div className="min-h-screen" style={{ backgroundColor: '#0a0a0b' }} />}>
+            <AdminBroadcastPage />
           </React.Suspense>
         }
       />

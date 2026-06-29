@@ -36,20 +36,76 @@ function contentOf(movie: Movie) {
  * localStorage so the app still works anonymously. On first login, any local
  * history is migrated to the account.
  */
+// Сервер возвращает в /swipes ответе массив новых матчей, чтобы клиент
+// мог сразу показать WOW-overlay (см. MatchOverlay.tsx).
+interface NewMatchPayload {
+  id: string;
+  tmdbId: number;
+  contentType: 'MOVIE' | 'TV';
+  friend: { id: string; firstName: string | null; username: string | null; photoUrl: string | null };
+  content: { title: string; posterPath: string | null } | null;
+}
+
 export function useLibrary(user: AuthUser | null, authLoading: boolean) {
   const [likedMovies, setLikedMovies] = useState<Movie[]>([]);
   const [watchedMovies, setWatchedMovies] = useState<Movie[]>([]);
   const [dislikedIds, setDislikedIds] = useState<Set<number>>(new Set());
+  const [pendingMatch, setPendingMatch] = useState<NewMatchPayload | null>(null);
+  // Инкрементируется в resetAll(). Используется как key={} для SwipeContainer
+  // в App.tsx — заставляет полностью пересоздать дerek после сброса истории,
+  // чтобы useMovies заново сходил в TMDB вместо отрисовки протухшего state.
+  const [resetVersion, setResetVersion] = useState(0);
   const migratedRef = useRef(false);
 
-  const post = useCallback((movie: Movie, action: SwipeActionType) => {
-    void api.post('/swipes', {
-      tmdbId: movie.id,
-      contentType: movie.contentType,
-      action,
-      content: contentOf(movie),
-    });
+  const post = useCallback(async (movie: Movie, action: SwipeActionType) => {
+    try {
+      const res = await api.post('/swipes', {
+        tmdbId: movie.id,
+        contentType: movie.contentType,
+        action,
+        content: contentOf(movie),
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as { newMatches?: NewMatchPayload[] };
+      if (data.newMatches && data.newMatches.length > 0) {
+        // Если за один свайп случилось несколько матчей (теоретически
+        // возможно при множестве друзей с одинаковым лайком) — показываем
+        // первый. Остальные подтянутся через polling unseen-count badge.
+        setPendingMatch(data.newMatches[0]);
+      }
+    } catch {
+      /* транзитная сеть — pass */
+    }
   }, []);
+
+  const dismissMatch = useCallback(() => setPendingMatch(null), []);
+
+  // Полный wipe истории. Удаляем на сервере (DELETE /swipes/all) + чистим
+  // локальные коллекции. После этого свайп-дека снова покажет все фильмы.
+  // Также сбрасываем cached state свайп-деки в localStorage, иначе старая
+  // партия фильмов с уже-просмотренными ID останется в памяти.
+  const resetAll = useCallback(async () => {
+    if (user) {
+      try {
+        await fetch('/api/swipes/all', { method: 'DELETE', credentials: 'include' });
+      } catch {
+        /* best-effort */
+      }
+    }
+    setLikedMovies([]);
+    setWatchedMovies([]);
+    setDislikedIds(new Set());
+    try {
+      localStorage.removeItem(LS.liked);
+      localStorage.removeItem(LS.watched);
+      localStorage.removeItem(LS.disliked);
+      localStorage.removeItem('flicksee_swipe_state');
+      localStorage.removeItem('flicksee_swipe_currentIndex');
+    } catch {
+      /* ignore */
+    }
+    setResetVersion((v) => v + 1);
+  }, [user]);
 
   // (Re)load the library whenever auth state settles or changes.
   useEffect(() => {
@@ -121,7 +177,7 @@ export function useLibrary(user: AuthUser | null, authLoading: boolean) {
         if (!user) localStorage.setItem(LS.watched, JSON.stringify(next));
         return next;
       });
-      if (user) post(movie, 'LIKE');
+      if (user) void post(movie, 'LIKE');
     },
     [user, post],
   );
@@ -133,7 +189,28 @@ export function useLibrary(user: AuthUser | null, authLoading: boolean) {
         if (!user) localStorage.setItem(LS.disliked, JSON.stringify([...next]));
         return next;
       });
-      if (user) post(movie, 'DISLIKE');
+      if (user) void post(movie, 'DISLIKE');
+    },
+    [user, post],
+  );
+
+  // Сильный лайк: попадает в watchlist + сигналит друзьям. Локально храним
+  // как обычный LIKE (UI не различает свои лайки и свои рекомендации — флаг
+  // важен только для друзей в их UI).
+  const handleRecommend = useCallback(
+    (movie: Movie) => {
+      setLikedMovies((prev) => {
+        const next = [movie, ...prev.filter((m) => m.id !== movie.id)];
+        if (!user) localStorage.setItem(LS.liked, JSON.stringify(next));
+        return next;
+      });
+      setWatchedMovies((prev) => {
+        if (!prev.some((m) => m.id === movie.id)) return prev;
+        const next = prev.filter((m) => m.id !== movie.id);
+        if (!user) localStorage.setItem(LS.watched, JSON.stringify(next));
+        return next;
+      });
+      if (user) void post(movie, 'RECOMMEND');
     },
     [user, post],
   );
@@ -151,7 +228,7 @@ export function useLibrary(user: AuthUser | null, authLoading: boolean) {
         if (!user) localStorage.setItem(LS.liked, JSON.stringify(next));
         return next;
       });
-      if (user) post(movie, 'SEEN');
+      if (user) void post(movie, 'SEEN');
     },
     [user, post],
   );
@@ -212,6 +289,11 @@ export function useLibrary(user: AuthUser | null, authLoading: boolean) {
     handleLike,
     handleDislike,
     handleWatched,
+    handleRecommend,
     handleUndo,
+    pendingMatch,
+    dismissMatch,
+    resetAll,
+    resetVersion,
   };
 }

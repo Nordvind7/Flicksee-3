@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FilmIcon, HeartIcon, EyeIcon, FriendsIcon, BookIcon } from './icons';
+import { FriendsIcon } from './icons';
 import { useMatchPolling } from '../hooks/useMatchPolling';
 import LoginButton from './LoginButton';
 
@@ -18,7 +18,7 @@ const NavLink: React.FC<{
   <Link
     to={to}
     aria-label={ariaLabel}
-    className={`relative inline-flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-150 ${
+    className={`relative inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl transition-all duration-150 ${
       active
         ? 'bg-accent text-white shadow-glow-accent'
         : 'text-ink-200 hover:text-white hover:bg-white/5'
@@ -42,38 +42,29 @@ const TopNav: React.FC = () => {
   const navigate = useNavigate();
   const { count: unseenMatches } = useMatchPolling();
   const onFriends = location.pathname.startsWith('/friends');
-  const onBlog = location.pathname.startsWith('/blog');
 
   return (
     <header
       className="sticky top-0 z-30 backdrop-blur-md border-b border-white/5"
       style={{ backgroundColor: 'rgba(10, 10, 11, 0.85)' }}
     >
-      <div className="max-w-5xl mx-auto flex items-center justify-between gap-3 px-4 py-3">
+      <div className="max-w-5xl mx-auto flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3">
         <button
           onClick={() => navigate('/')}
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           aria-label="Flicksee — на главную"
         >
-          <img src="/logo.jpg" alt="" className="w-8 h-8 rounded-lg object-cover ring-1 ring-white/10" />
+          <img src="/logo.jpg" alt="" className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover ring-1 ring-white/10" />
           <span
-            className="text-xl font-black tracking-tightest hidden sm:inline"
+            className="text-lg sm:text-xl font-black tracking-tightest"
             style={{ color: '#E50914' }}
           >
             Flicksee
           </span>
         </button>
-        <nav className="flex items-center gap-1">
-          <NavLink to="/" active={false} ariaLabel="Свайпать трейлеры">
-            <FilmIcon />
-          </NavLink>
-          <NavLink to="/" active={false} ariaLabel="Хочу посмотреть">
-            <HeartIcon />
-          </NavLink>
-          <NavLink to="/" active={false} ariaLabel="Уже видел">
-            <EyeIcon />
-          </NavLink>
-          <div className="w-px h-6 bg-white/10 mx-1" />
+        {/* Sub-страницы: только Друзья + Профиль. «Уже видел» и «Блог»
+            переехали в дропдаун ProfileMenu чтобы шапка не была перегружена. */}
+        <nav className="flex items-center gap-2">
           <NavLink
             to="/friends"
             active={onFriends}
@@ -82,12 +73,7 @@ const TopNav: React.FC = () => {
           >
             <FriendsIcon />
           </NavLink>
-          <NavLink to="/blog" active={onBlog} ariaLabel="Блог">
-            <BookIcon />
-          </NavLink>
-          <div className="ml-2">
-            <LoginButton />
-          </div>
+          <LoginButton />
         </nav>
       </div>
     </header>

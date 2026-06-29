@@ -43,4 +43,6 @@ export enum ContentType {
 export interface FilterState {
     contentType: ContentType;
     genres: number[];
+    /** TMDB BCP-47 язык оригинала (e.g. 'ja' для японских аниме). Опционально. */
+    originalLanguage?: string;
 }

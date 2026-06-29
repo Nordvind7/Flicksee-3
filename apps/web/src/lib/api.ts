@@ -87,6 +87,7 @@ export interface FriendProfile {
     vote_average: number;
     release_date?: string;
     genre_ids: number[];
+    recommended: boolean;
   }>;
   matchedTmdbIds: number[];
 }

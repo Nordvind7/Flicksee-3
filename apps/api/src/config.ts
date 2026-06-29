@@ -28,6 +28,13 @@ const schema = z.object({
   TELEGRAM_BOT_WEBHOOK_SECRET: z.string().min(16).optional(),
   WEB_PUBLIC_URL: z.string().url().default('http://localhost:3000'),
   BOT_MODE: z.enum(['polling', 'webhook']).default('polling'),
+  // Optional egress proxies (Cloudflare Workers) for hosts blocked from the
+  // origin server (RU VPS cannot reach TMDB or Telegram directly).
+  //   TMDB_API_BASE: full base ending in /3, e.g. https://x.workers.dev/tmdb-api/3
+  //   TELEGRAM_API_ROOT: root WITHOUT /bot<token>, e.g. https://x.workers.dev/tg
+  // When unset we fall back to talking to the real hosts directly.
+  TMDB_API_BASE: z.string().url().default('https://api.themoviedb.org/3'),
+  TELEGRAM_API_ROOT: z.string().url().default('https://api.telegram.org'),
 });
 
 const parsed = schema.safeParse(process.env);

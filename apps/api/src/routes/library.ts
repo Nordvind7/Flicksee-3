@@ -8,7 +8,7 @@ import { detectMatches } from '../lib/matches';
 const swipeSchema = z.object({
   tmdbId: z.number().int().positive(),
   contentType: z.enum(['movie', 'tv']),
-  action: z.enum(['LIKE', 'DISLIKE', 'SEEN']),
+  action: z.enum(['LIKE', 'DISLIKE', 'SEEN', 'RECOMMEND']),
   content: z
     .object({
       title: z.string().min(1).max(500),
@@ -108,14 +108,18 @@ export default async function libraryRoutes(app: FastifyInstance) {
       });
     });
 
-    // Fire-and-forget: do not let match detection block the swipe response.
-    setImmediate(() => {
-      void detectMatches(userId, { tmdbId, contentType: dbType, action }).catch((e) =>
-        req.log.warn(e),
-      );
-    });
+    // Matching runs synchronously: client wants to know immediately if this
+    // swipe produced a match so it can show the WOW overlay. detectMatches
+    // is fast (1 query per friend, typically <10 friends) and tolerates
+    // failures internally — won't throw.
+    let newMatches: Awaited<ReturnType<typeof detectMatches>> = [];
+    try {
+      newMatches = await detectMatches(userId, { tmdbId, contentType: dbType, action });
+    } catch (e) {
+      req.log.warn(e, 'detectMatches failed (non-fatal)');
+    }
 
-    return { ok: true };
+    return { ok: true, newMatches };
   });
 
   // All tmdb ids the user has already acted on, grouped by type — used to keep
@@ -132,9 +136,13 @@ export default async function libraryRoutes(app: FastifyInstance) {
     return out;
   });
 
-  // "Хочу посмотреть" — liked titles.
+  // "Хочу посмотреть" — liked titles (LIKE и RECOMMEND).
+  // RECOMMEND это «лайк с восклицательным знаком» — должен попадать в watchlist
+  // и одновременно сигнализировать друзьям.
   app.get('/watchlist', { onRequest: [app.authenticate] }, async (req) => {
-    return { items: await listByAction(req.user.sub, 'LIKE') };
+    const liked = await listByAction(req.user.sub, 'LIKE');
+    const recommended = await listByAction(req.user.sub, 'RECOMMEND');
+    return { items: [...recommended, ...liked] };
   });
 
   // "Просмотрено" — titles marked as already seen.
@@ -171,4 +179,27 @@ export default async function libraryRoutes(app: FastifyInstance) {
     ]);
     return { ok: true };
   });
+
+  // Reset all history: wipes the user's swipes + their matches. Used when the
+  // deck runs dry — gives a clean slate. Destructive, so:
+  //  - separate route (/swipes/all, not just DELETE /swipes which takes a body)
+  //  - rate-limited to 3/hour so a stolen access token can't farm the table
+  //  - client must confirm via window.confirm before calling
+  app.delete(
+    '/swipes/all',
+    {
+      onRequest: [app.authenticate],
+      config: { rateLimit: { max: 3, timeWindow: '1 hour' } },
+    },
+    async (req) => {
+      const userId = req.user.sub;
+      await prisma.$transaction([
+        prisma.match.deleteMany({
+          where: { OR: [{ userAId: userId }, { userBId: userId }] },
+        }),
+        prisma.swipe.deleteMany({ where: { userId } }),
+      ]);
+      return { ok: true };
+    },
+  );
 }

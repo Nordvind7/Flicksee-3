@@ -5,6 +5,7 @@ import TopNav from '../components/TopNav';
 import Footer from '../components/Footer';
 import MoviePickCard from '../components/MoviePickCard';
 import { POSTS, type BlogPost, type Section } from '../data/blog-posts';
+import { tmdbImg } from '../constants';
 
 // Static MVP content. Each post is hand-written, structured for SEO (H2
 // stack, internal links, optional movie-pick lists with TMDB posters).
@@ -54,9 +55,7 @@ function useArticleMeta(post: BlogPost | undefined, posterPath?: string | null):
   useEffect(() => {
     if (!post) return;
     const url = `${SITE_URL}/blog/${post.slug}`;
-    const ogImage = posterPath
-      ? `https://image.tmdb.org/t/p/w780${posterPath}`
-      : `${SITE_URL}/og-default.jpg`;
+    const ogImage = posterPath ? tmdbImg('w780', posterPath) : `${SITE_URL}/og-default.jpg`;
 
     const origTitle = document.title;
     document.title = `${post.title} — Flicksee`;

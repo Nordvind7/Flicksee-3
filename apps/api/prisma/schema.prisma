@@ -23,6 +23,7 @@ enum SwipeAction {
   LIKE // «хочу посмотреть»
   DISLIKE // «не интересно» — больше не показывать
   SEEN // «уже смотрел»
+  RECOMMEND // «хочу + рекомендую друзьям» — matching treats it as LIKE
 }
 
 enum RoomStatus {
@@ -49,6 +50,12 @@ model User {
   // Whether the user pressed /start in the bot — required before we can push
   // match notifications to them.
   isBotStarted Boolean  @default(false)
+  // Personal permanent invite code. Shared link is
+  //   https://t.me/Flicksee_bot?start=add_<inviteCode>
+  // Any visitor who taps Start in the bot becomes a friend.
+  // 10-char base36 — collision-safe for our scale; short enough to fit
+  // Telegram's 64-char ?start= payload comfortably.
+  inviteCode   String?  @unique
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   lastSeenAt   DateTime @default(now())
@@ -63,6 +70,7 @@ model User {
   matchesA      Match[]        @relation("MatchA")
   matchesB      Match[]        @relation("MatchB")
   invites       Invite[]       @relation("InviteCreator")
+  loginTokens   LoginToken[]
 
   @@index([lastSeenAt])
 }
@@ -242,6 +250,23 @@ model Match {
   @@unique([userAId, userBId, tmdbId, contentType])
   @@index([userAId, matchedAt])
   @@index([userBId, matchedAt])
+}
+
+// One-time login handshake. Front creates a row, opens t.me/<bot>?start=login_<token>
+// in Telegram; bot's /start handler upserts the User and sets userId. The web
+// polls until userId is set, then exchanges the row for JWT (consumedAt).
+// TTL: 5 minutes from createdAt (enforced in the route, not the DB).
+model LoginToken {
+  id          String    @id @default(cuid())
+  token       String    @unique
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+  consumedAt  DateTime?
+
+  @@index([createdAt])
+  @@index([userId])
 }
 
 // Single-use Telegram deeplink token: t.me/<BOT_USERNAME>?start=<token>

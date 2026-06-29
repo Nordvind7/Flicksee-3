@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useFriendProfile } from '../hooks/useFriendProfile';
 import TopNav from '../components/TopNav';
 import Footer from '../components/Footer';
+import { tmdbImg } from '../constants';
 
 const FriendProfilePage: React.FC = () => {
   const { id = '' } = useParams<{ id: string }>();
@@ -72,7 +73,7 @@ const FriendProfilePage: React.FC = () => {
               >
                 {m.poster_path ? (
                   <img
-                    src={`https://image.tmdb.org/t/p/w342${m.poster_path}`}
+                    src={tmdbImg('w342', m.poster_path)}
                     alt={m.title}
                     className="w-full aspect-[2/3] object-cover"
                     loading="lazy"
@@ -83,6 +84,11 @@ const FriendProfilePage: React.FC = () => {
                 {matched.has(m.id) && (
                   <span className="absolute top-2 left-2 bg-yellow-400 text-ink-900 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
                     Матч
+                  </span>
+                )}
+                {m.recommended && !matched.has(m.id) && (
+                  <span className="absolute top-2 left-2 bg-gradient-to-r from-fuchsia-500 to-orange-400 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-lg">
+                    ✨ Топ
                   </span>
                 )}
                 <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 text-xs font-medium truncate">

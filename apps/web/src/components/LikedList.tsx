@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import type { Movie, Genre } from '../types';
 import { TMDB_IMAGE_BASE_URL } from '../constants';
 import { ShareIcon, StarIcon } from './icons';
-import MovieDetailModal from './MovieDetailModal';
+// MovieDetailModal — тяжёлая (детали фильма + рекомендации). Lazy: только
+// при тапе на карточку в watchlist.
+const MovieDetailModal = React.lazy(() => import('./MovieDetailModal'));
 
 interface LikedListProps {
   movies: Movie[];
@@ -174,13 +176,17 @@ const LikedList: React.FC<LikedListProps> = ({
           />
         ))}
       </div>
-      <MovieDetailModal
-        movie={openMovie}
-        onClose={() => setOpenMovie(null)}
-        onLike={(m) => onLikeRecommendation?.(m)}
-        genreMap={genreMap}
-        excludedIds={excludedIds ?? new Set()}
-      />
+      {openMovie && (
+        <React.Suspense fallback={null}>
+          <MovieDetailModal
+            movie={openMovie}
+            onClose={() => setOpenMovie(null)}
+            onLike={(m) => onLikeRecommendation?.(m)}
+            genreMap={genreMap}
+            excludedIds={excludedIds ?? new Set()}
+          />
+        </React.Suspense>
+      )}
     </div>
   );
 };

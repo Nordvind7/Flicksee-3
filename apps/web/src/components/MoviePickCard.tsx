@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useLibraryContext } from '../auth/LibraryContext';
 import { ContentType, type Movie } from '../types';
 import { HeartIcon } from './icons';
+import { tmdbImg } from '../constants';
 
 export interface MoviePick {
   tmdbId: number;
@@ -71,7 +72,7 @@ const MoviePickCard: React.FC<{ pick: MoviePick; index: number }> = ({ pick, ind
             <div className="w-full aspect-[2/3] animate-pulse" style={{ backgroundColor: '#1f1f25' }} />
           ) : posterPath ? (
             <img
-              src={`https://image.tmdb.org/t/p/w185${posterPath}`}
+              src={tmdbImg('w185', posterPath)}
               alt={`Постер фильма «${pick.title}»`}
               className="w-full aspect-[2/3] object-cover"
               loading="lazy"

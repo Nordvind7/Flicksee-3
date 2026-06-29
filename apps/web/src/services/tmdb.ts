@@ -8,8 +8,16 @@ const BASE_PARAMS = `language=ru-RU`;
 export const fetchDiscoverContent = async (page: number, filters: FilterState): Promise<Movie[]> => {
   try {
     const genreQuery = filters.genres.length > 0 ? `&with_genres=${filters.genres.join(',')}` : '';
+    const langQuery = filters.originalLanguage ? `&with_original_language=${filters.originalLanguage}` : '';
+    // Quality filter: vote_count = соц.доказательство. Слишком низкая планка
+    // (100) пропускала региональные релизы с 10 настоящими голосами вперемешку
+    // с известными фильмами — первая карточка часто оказывалась незнакомым
+    // болливудом, юзер думал «не моё, дальше». 500 даёт mainstream-density.
+    // Для аниме (Animation + ja) ослабляем — у японских мультфильмов меньше
+    // глобальных голосов чем у Голливуда.
+    const minVotes = filters.originalLanguage === 'ja' ? 50 : 500;
     const response = await fetch(
-      `${TMDB_API_BASE_URL}/discover/${filters.contentType}?${BASE_PARAMS}&sort_by=popularity.desc&page=${page}${genreQuery}&vote_count.gte=100`
+      `${TMDB_API_BASE_URL}/discover/${filters.contentType}?${BASE_PARAMS}&sort_by=popularity.desc&page=${page}${genreQuery}${langQuery}&vote_count.gte=${minVotes}`
     );
     if (!response.ok) throw new Error('Failed to fetch content');
     const data = await response.json();

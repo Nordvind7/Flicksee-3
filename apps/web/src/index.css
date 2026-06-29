@@ -114,3 +114,39 @@
     animation: none !important;
   }
 }
+
+/* MatchOverlay: эффектный вход постера + текста.
+   Постер: zoom-in с лёгким rotate. Текст: вылет снизу с задержкой. */
+@keyframes matchPosterIn {
+  0%   { opacity: 0; transform: scale(0.55) rotate(-6deg); }
+  60%  { opacity: 1; transform: scale(1.08) rotate(2deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+.match-overlay-poster {
+  animation: matchPosterIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes matchTextIn {
+  0%   { opacity: 0; transform: translateY(40px) scale(0.9); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.match-overlay-text {
+  animation: matchTextIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
+}
+
+@keyframes matchCtaIn {
+  0%   { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.match-overlay-cta {
+  animation: matchCtaIn 0.5s ease-out 0.55s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .match-overlay-poster,
+  .match-overlay-text,
+  .match-overlay-cta {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+}

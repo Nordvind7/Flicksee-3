@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { StartIcon } from './icons';
+import { tmdbImg } from '../constants';
 
 interface SplashScreenProps {
   onStart: () => void;
@@ -21,13 +22,14 @@ async function fetchPopularPosters(): Promise<string[]> {
   }
 }
 
-// Rotates every ~2.6s through the value props. First impression should
-// answer "what is this and why should I tap?" within the first sentence.
+// Rotates every ~2.8s through value props. Speaks vibe + outcome, never
+// features. "Trailers with sound" is table-stakes, not a selling point.
 const ROTATOR = [
-  'Трейлеры со звуком — в один тап',
-  'Матчи с друзьями — автоматически',
+  'Снеки целы. Фильм найден.',
+  'Хватит листать. Время свайпать.',
+  'Кино за минуту вместо часа спора.',
 ];
-const ROTATOR_INTERVAL_MS = 2600;
+const ROTATOR_INTERVAL_MS = 2800;
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ onStart }) => {
   const [posters, setPosters] = useState<string[]>([]);
@@ -110,7 +112,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onStart }) => {
               {grid.map((path, i) => (
                 <img
                   key={`${path}-${i}`}
-                  src={`https://image.tmdb.org/t/p/w154${path}`}
+                  src={tmdbImg('w154', path)}
                   alt=""
                   loading="eager"
                   decoding="async"
@@ -170,18 +172,23 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onStart }) => {
           </span>
         </p>
 
-        {/* Rotator: cycles value props. The fixed-height wrapper avoids
-            layout jitter as text changes. */}
+        {/* Rotator: every item is mounted permanently and crossfaded with
+            opacity. Earlier we re-mounted (key={index}), which restarted the
+            entry animation each tick — visually a flash → blank → re-fade. */}
         <div
-          className="h-8 mb-10 overflow-hidden animate-fade-in-up"
+          className="h-8 mb-10 relative w-full max-w-md animate-fade-in-up"
           style={{ animationDelay: '0.65s' }}
         >
-          <p
-            key={rotatorIndex}
-            className="text-lg md:text-xl text-neutral-300 splash-rotator font-medium"
-          >
-            {ROTATOR[rotatorIndex]}
-          </p>
+          {ROTATOR.map((line, i) => (
+            <p
+              key={i}
+              aria-hidden={i !== rotatorIndex}
+              className="absolute inset-0 text-lg md:text-xl text-neutral-300 font-medium transition-opacity duration-700 ease-out"
+              style={{ opacity: i === rotatorIndex ? 1 : 0 }}
+            >
+              {line}
+            </p>
+          ))}
         </div>
 
         <button
@@ -200,14 +207,31 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onStart }) => {
           <span className="text-2xl transition-transform group-hover:translate-x-1">→</span>
         </button>
 
-        <p
-          className="text-xs text-brand-muted mt-6 max-w-xs leading-relaxed animate-fade-in-up"
+        {/* Three-step explainer — answers "что я тут получу" в одном взгляде. */}
+        <div
+          className="grid grid-cols-3 gap-2 sm:gap-4 mt-8 max-w-md w-full animate-fade-in-up"
           style={{ animationDelay: '1.05s' }}
         >
-          Свайпай как в Tinder: вправо «хочу посмотреть», влево «не моё», вверх «уже видел».
-        </p>
+          {[
+            { n: '1', t: 'Свайпай', s: 'карточки кино' },
+            { n: '2', t: 'Зови', s: 'пару или друга' },
+            { n: '3', t: 'Матч', s: 'идёте смотреть' },
+          ].map((step) => (
+            <div
+              key={step.n}
+              className="flex flex-col items-center text-center px-1 py-3 rounded-xl bg-white/[0.03] ring-1 ring-white/5"
+            >
+              <span className="w-6 h-6 rounded-full bg-brand-primary text-white text-xs font-bold flex items-center justify-center mb-2 shadow-glow-accent">
+                {step.n}
+              </span>
+              <span className="text-sm font-semibold text-white leading-tight">{step.t}</span>
+              <span className="text-[11px] text-brand-muted leading-tight mt-0.5">{step.s}</span>
+            </div>
+          ))}
+        </div>
+
         <p
-          className="text-[10px] text-brand-muted/60 mt-3 max-w-xs animate-fade-in-up"
+          className="text-[10px] text-brand-muted/60 mt-4 max-w-xs animate-fade-in-up"
           style={{ animationDelay: '1.2s' }}
         >
           Нажимая «Начать», ты разрешаешь автовоспроизведение трейлеров со звуком.

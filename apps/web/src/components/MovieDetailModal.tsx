@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { Movie } from '../types';
-import { TMDB_IMAGE_BASE_URL } from '../constants';
+import { TMDB_IMAGE_BASE_URL, tmdbImg } from '../constants';
 import { fetchRecommendations } from '../services/tmdb';
 import { XMarkIcon, HeartIcon, StarIcon } from './icons';
 import WatchProvidersRow from './WatchProvidersRow';
@@ -77,7 +77,7 @@ const MovieDetailModal: React.FC<Props> = ({ movie, onClose, onLike, genreMap, e
         <div className="relative">
           {movie.backdrop_path && (
             <img
-              src={`https://image.tmdb.org/t/p/w780${movie.backdrop_path}`}
+              src={tmdbImg('w780', movie.backdrop_path)}
               alt=""
               className="w-full aspect-[16/9] object-cover sm:rounded-t-3xl"
             />

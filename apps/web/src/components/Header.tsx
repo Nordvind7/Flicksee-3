@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { HeartIcon, FilmIcon, EyeIcon, FilterIcon, FriendsIcon } from './icons';
-import FilterModal from './FilterModal';
+import { HeartIcon, FilmIcon, FilterIcon, FriendsIcon } from './icons';
+// FilterModal грузится только при клике на FilterIcon — экономит initial JS.
+const FilterModal = React.lazy(() => import('./FilterModal'));
 import LoginButton from './LoginButton';
 import { useMatchPolling } from '../hooks/useMatchPolling';
 import type { FilterState } from '../types';
@@ -50,23 +51,21 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView, filters, setFilte
 
   return (
     <>
-      <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between gap-3 px-4 py-3 bg-gradient-to-b from-ink-900/85 via-ink-900/50 to-transparent backdrop-blur-sm">
-        <div className="flex items-center gap-3 min-w-0">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-            aria-label="Flicksee — на главную"
-          >
-            <img src="/logo.jpg" alt="" className="w-8 h-8 rounded-lg object-cover ring-1 ring-white/10" />
-            <span className="text-xl font-black text-accent tracking-tightest hidden sm:inline">
-              Flicksee
-            </span>
-          </button>
-          <div className="hidden sm:block">
-            <LoginButton />
-          </div>
-        </div>
-        <nav className="flex items-center gap-1">
+      <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-b from-ink-900/85 via-ink-900/50 to-transparent backdrop-blur-sm">
+        {/* Лого слева */}
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity shrink-0"
+          aria-label="Flicksee — на главную"
+        >
+          <img src="/logo.jpg" alt="" className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover ring-1 ring-white/10" />
+          <span className="text-lg sm:text-xl font-black text-accent tracking-tightest hidden xs:inline">
+            Flicksee
+          </span>
+        </button>
+
+        {/* Всё остальное — справа единым блоком */}
+        <nav className="flex items-center gap-0.5 sm:gap-1">
           <NavButton
             isActive={onHome && currentView === 'swipe'}
             onClick={() => { navigate('/'); setView('swipe'); }}
@@ -81,14 +80,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView, filters, setFilte
           >
             <HeartIcon />
           </NavButton>
-          <NavButton
-            isActive={onHome && currentView === 'watched'}
-            onClick={() => { navigate('/'); setView('watched'); }}
-            ariaLabel="Уже видел"
-          >
-            <EyeIcon />
-          </NavButton>
-          <div className="w-px h-6 bg-white/10 mx-1" />
+          <div className="w-px h-5 bg-white/10 mx-0.5 sm:mx-1" />
           <NavButton
             isActive={onFriends}
             onClick={() => navigate('/friends')}
@@ -100,7 +92,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView, filters, setFilte
           {onHome && onOpenSearch && (
             <button
               onClick={onOpenSearch}
-              className="p-2 rounded-xl text-ink-200 hover:text-white hover:bg-white/5 transition-all"
+              className="p-2 rounded-xl text-ink-200 hover:text-white hover:bg-white/5 transition-all hidden sm:inline-flex"
               aria-label="Поиск"
               title="⌘K"
             >
@@ -116,17 +108,20 @@ const Header: React.FC<HeaderProps> = ({ currentView, setView, filters, setFilte
               <FilterIcon />
             </NavButton>
           )}
-          <div className="sm:hidden ml-1">
-            <LoginButton />
-          </div>
+          <div className="w-px h-6 bg-white/10 mx-1 sm:mx-1.5" />
+          <LoginButton />
         </nav>
       </header>
-      <FilterModal
-        isOpen={isFilterModalOpen}
-        onClose={() => setIsFilterModalOpen(false)}
-        currentFilters={filters}
-        onApplyFilters={setFilters}
-      />
+      {isFilterModalOpen && (
+        <React.Suspense fallback={null}>
+          <FilterModal
+            isOpen={isFilterModalOpen}
+            onClose={() => setIsFilterModalOpen(false)}
+            currentFilters={filters}
+            onApplyFilters={setFilters}
+          />
+        </React.Suspense>
+      )}
     </>
   );
 };
