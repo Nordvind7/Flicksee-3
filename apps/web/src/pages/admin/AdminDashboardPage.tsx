@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import type { DashboardData } from '@flicksee/shared';
 import { useAuth } from '../../auth/AuthContext';
+import { api } from '../../lib/api';
 import MetricCard from './components/MetricCard';
 import TopContentTable from './components/TopContentTable';
 import FunnelBlock from './components/FunnelBlock';
@@ -22,7 +23,9 @@ const AdminDashboardPage: React.FC = () => {
     let cancelled = false;
     async function load() {
       try {
-        const res = await fetch('/api/admin/dashboard', { credentials: 'include' });
+        // api.get attaches the in-memory access JWT + transparently refreshes
+        // on 401. Plain fetch wouldn't carry the Authorization header.
+        const res = await api.get('/admin/dashboard');
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = (await res.json()) as DashboardData;
         if (!cancelled) {
