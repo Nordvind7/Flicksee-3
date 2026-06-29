@@ -143,6 +143,65 @@ function privacyBody(): string {
 </article>`;
 }
 
+function aboutHead(): string {
+  return [
+    `<title>Flicksee — что посмотреть на вечер: свайп-трейлеры фильмов и сериалов</title>`,
+    `<meta name="description" content="Свайпай 30-секундные трейлеры фильмов и сериалов вместо чтения скучных описаний. Match с друзьями через Telegram. Бесплатно, без подписки, работает в России." />`,
+    `<link rel="canonical" href="${SITE_URL}/about" />`,
+    `<meta property="og:type" content="website" />`,
+    `<meta property="og:title" content="Flicksee — что посмотреть за минуту" />`,
+    `<meta property="og:description" content="Свайп-трейлеры вместо описаний. Match с друзьями. Бесплатно." />`,
+    `<meta property="og:url" content="${SITE_URL}/about" />`,
+    `<meta property="og:image" content="${SITE_URL}/og-default.jpg" />`,
+  ].join('\n    ');
+}
+
+function aboutBody(): string {
+  return `
+    <section>
+      <h1>Что посмотреть на вечер за минуту, а не за час</h1>
+      <p>Свайпай 30-секундные трейлеры. Лайкнул — сохранили. Совпало с другом — кино найдено.</p>
+    </section>
+    <section>
+      <h2>Как это работает</h2>
+      <div>
+        <h3>Смотри трейлер 30 сек</h3>
+        <p>Без скучных описаний — сразу видно, зайдёт или нет.</p>
+        <h3>Свайпай как в Tinder</h3>
+        <p>Хочу / Не моё / Уже видел / Рекомендую.</p>
+        <h3>Кино — найдено</h3>
+        <p>Match с другом — оба хотим одно и то же.</p>
+      </div>
+    </section>
+    <section>
+      <h2>Почему это</h2>
+      <ul>
+        <li>Час листал — ничего не выбрал → За минуту 10 свайпов — знаешь что хочешь</li>
+        <li>Описания не передают вайб → Трейлер за 30 сек — увидишь сам</li>
+        <li>Спорим с другом полчаса → Match — оба хотим одно. Без споров</li>
+      </ul>
+    </section>
+    <section>
+      <h2>FAQ</h2>
+      <h3>Это бесплатно?</h3>
+      <p>Да, полностью. Никаких подписок и pay-to-watch.</p>
+      <h3>Где смотреть фильм после матча?</h3>
+      <p>Покажем где: КиноПоиск, ivi, Wink, Okko — что доступно в России.</p>
+      <h3>Зачем Telegram?</h3>
+      <p>Через бота приходят матчи с друзьями, и сохраняется твой watchlist между устройствами.</p>
+      <h3>Можно без друзей?</h3>
+      <p>Можно. Тогда это просто личный watchlist с трейлерами вместо описаний.</p>
+      <h3>Это для мобилы или десктопа?</h3>
+      <p>И там, и там. Открывается в любом браузере, а сохраняется в Telegram.</p>
+    </section>
+    <section>
+      <h2>Готов?</h2>
+      <p>Найди что посмотреть за минуту.</p>
+      <p>Бесплатно. Без email. Без карты.</p>
+    </section>
+  `.trim();
+}
+
 // Inject custom head tags + body content into the SPA template.
 // IMPORTANT: index.html has multi-line meta tags like
 //   <meta\n      name="description"\n      content="..."\n    />
@@ -212,7 +271,10 @@ async function main() {
   ].join('\n    ');
   await prerender('privacy', privacyHead, privacyBody());
 
-  console.log(`Prerendered ${POSTS.length + 2} routes.`);
+  // Cold-traffic landing — Yandex.Direct will scrape this; needs full HTML.
+  await prerender('about', aboutHead(), aboutBody());
+
+  console.log(`Prerendered ${POSTS.length + 3} routes.`);
 }
 
 await main();
