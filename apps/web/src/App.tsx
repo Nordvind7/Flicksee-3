@@ -86,7 +86,9 @@ const App: React.FC = () => {
   // Холодный трафик с маркетинга идёт на /about — там splash показывается
   // всегда (даже логинутым), для адресов в Директе и шерах.
   const isHomeRoute = location.pathname === '/';
-  const isAboutRoute = location.pathname === '/about';
+  // nginx редиректит /about → /about/ (trailing slash mode), поэтому
+  // проверяем ОБА варианта, иначе React-роутер падает в NotFound.
+  const isAboutRoute = location.pathname === '/about' || location.pathname === '/about/';
   const [hasInteracted, setHasInteracted] = useState(false);
 
   useEffect(() => {
