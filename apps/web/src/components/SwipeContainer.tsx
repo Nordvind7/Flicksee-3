@@ -1,15 +1,21 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import useMovies from '../hooks/useMovies';
 import TrailerCard from './TrailerCard';
+import TrailerCardSkeleton from './TrailerCardSkeleton';
+import EmptyDeck from './EmptyDeck';
 import type { Movie, FilterState } from '../types';
 import { fetchTrailerKey } from '../services/tmdb';
-import { LoadingIcon } from './icons';
 
 interface SwipeContainerProps {
   onLike: (movie: Movie) => void;
   onDislike: (movie: Movie) => void;
   onWatched: (movie: Movie) => void;
+  onRecommend: (movie: Movie) => void;
   onUndo?: (movie: Movie) => void | Promise<void>;
+  /** Wipe всей истории — связан с EmptyDeck "Сбросить историю". */
+  onResetHistory: () => Promise<void> | void;
+  /** Открыть advanced FilterModal — связан с EmptyDeck "Изменить жанр". */
+  onOpenFilters: () => void;
   filters: FilterState;
   genreMap: Map<number, string>;
   excludedIds: Set<number>;
@@ -18,7 +24,7 @@ interface SwipeContainerProps {
 const PRELOAD_COUNT = 4;
 const LOAD_MORE_THRESHOLD = 5;
 
-const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWatched, onUndo, filters, genreMap, excludedIds }) => {
+const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWatched, onRecommend, onUndo, onResetHistory, onOpenFilters, filters, genreMap, excludedIds }) => {
   const { movies, isLoading, error, loadMoreMovies, hasMore } = useMovies(filters, excludedIds);
 
   const [currentIndex, setCurrentIndex] = useState(() => {
@@ -127,6 +133,13 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWa
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         handleSwipe('up', top);
+      } else if (e.key === 'r' || e.key === 'R' || e.key === 'к' || e.key === 'К') {
+        e.preventDefault();
+        const newIndex = currentIndex + 1;
+        setCurrentIndex(newIndex);
+        try { localStorage.setItem('flicksee_swipe_currentIndex', String(newIndex)); } catch { /* ignore */ }
+        onRecommend(top);
+        setLastSwipe({ movie: top, direction: 'right' });
       } else if ((e.key === 'z' || e.key === 'Z' || e.key === 'я' || e.key === 'Я') && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         void undoLast();
@@ -134,28 +147,28 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWa
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [movies, currentIndex, handleSwipe, undoLast]);
+  }, [movies, currentIndex, handleSwipe, undoLast, onRecommend]);
 
   const renderContent = () => {
     const hasMoviesToShow = movies.length > currentIndex;
 
     if (isLoading && !hasMoviesToShow) {
-      return (
-        <div className="flex flex-col items-center justify-center h-full text-brand-muted">
-          <LoadingIcon />
-          <p className="mt-2">Загружаем...</p>
-        </div>
-      );
+      return <TrailerCardSkeleton />;
     }
 
     if (error) {
       return <div className="flex items-center justify-center h-full text-red-500">{error}</div>;
     }
-    
+
     if (!hasMoviesToShow && !isLoading) {
-       return <div className="flex items-center justify-center h-full text-brand-muted text-center p-4">
-        {hasMore ? 'Подгружаем еще фильмы...' : 'Вы посмотрели всё! Попробуйте изменить фильтры.'}
-      </div>;
+      return (
+        <EmptyDeck
+          hasMore={hasMore}
+          onLoadMore={loadMoreMovies}
+          onResetHistory={onResetHistory}
+          onChangeFilters={onOpenFilters}
+        />
+      );
     }
 
     // Only render the top few cards for performance
@@ -167,7 +180,7 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWa
       // the trailer was eating the whole viewport and the action buttons
       // fell below the fold. max-w-lg gives ~512px — meaningfully bigger
       // than a phone but still card-shaped.
-      <div className="relative w-full max-w-lg h-full mx-auto flex items-center justify-center px-2">
+      <div className="relative w-full max-w-lg h-full mx-auto flex items-center justify-center px-2 py-1 sm:py-3">
         {lastSwipe && (
           <button
             onClick={() => void undoLast()}
@@ -186,11 +199,29 @@ const SwipeContainer: React.FC<SwipeContainerProps> = ({ onLike, onDislike, onWa
               key={movie.id}
               movie={movie}
               onSwipe={(dir) => handleSwipe(dir, movie)}
+              onRecommend={() => {
+                const newIndex = currentIndex + 1;
+                setCurrentIndex(newIndex);
+                try { localStorage.setItem('flicksee_swipe_currentIndex', String(newIndex)); } catch { /* ignore */ }
+                onRecommend(movie);
+                setLastSwipe({ movie, direction: 'right' });
+              }}
               // The top card is the one at index 0 of the visibleMovies array
               isActive={index === 0}
               contentType={filters.contentType}
               trailerKey={trailerKeys.get(movie.id)}
               genreMap={genreMap}
+              onSkipUnplayable={() => {
+                // No swipe is recorded; the broken trailer was never the
+                // user's choice. Just advance the deck.
+                const newIndex = currentIndex + 1;
+                setCurrentIndex(newIndex);
+                try {
+                  localStorage.setItem('flicksee_swipe_currentIndex', String(newIndex));
+                } catch {
+                  /* ignore */
+                }
+              }}
             />
           );
         }).reverse()} {/* Reverse to stack them correctly, with the first card (index 0) on top */}

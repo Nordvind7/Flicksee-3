@@ -16,18 +16,26 @@ declare global {
 interface TrailerCardProps {
   movie: Movie;
   onSwipe: (direction: 'left' | 'right' | 'up') => void;
+  onRecommend?: () => void;
+  /** Fired when the trailer can't play (embed blocked, age-restricted, removed).
+   *  Container increments index WITHOUT recording the card as a swipe. */
+  onSkipUnplayable?: () => void;
   isActive: boolean;
   contentType: ContentType;
   trailerKey: string | null | undefined; // Added for preloading
   genreMap: Map<number, string>;
 }
 
-const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, trailerKey, genreMap }) => {
+const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, onRecommend, onSkipUnplayable, isActive, trailerKey, genreMap }) => {
   const isLoading = trailerKey === undefined; // Loading if key is not yet fetched
   const { soundOn, setSoundOn, unlocked } = useSound();
   const [audioBlocked, setAudioBlocked] = useState(false);
   const [ytApiReady, setYtApiReady] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  // YouTube embed errors (100 = removed, 101/150 = embedding disabled,
+  // including age-restricted). When set, we show a brief notice and auto-
+  // advance so the user isn't stuck staring at YT's error frame.
+  const [unplayable, setUnplayable] = useState(false);
 
   const playerRef = useRef<any>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -67,6 +75,21 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, tra
     }, 100);
     return () => clearInterval(intervalId);
   }, []);
+
+  // New trailerKey ⇒ reset the error state; otherwise a previous card's
+  // "unplayable" would leak onto the next movie before YT replies.
+  useEffect(() => {
+    setUnplayable(false);
+  }, [trailerKey]);
+
+  // Auto-advance when YT reports this trailer is unwatchable. Only the active
+  // card triggers the skip; pre-loaded next cards just remember the flag and
+  // skip themselves when they become active.
+  useEffect(() => {
+    if (!unplayable || !isActive || !onSkipUnplayable) return;
+    const t = window.setTimeout(() => onSkipUnplayable(), 1500);
+    return () => window.clearTimeout(t);
+  }, [unplayable, isActive, onSkipUnplayable]);
 
   // Create and destroy the YouTube player instance.
   useEffect(() => {
@@ -111,6 +134,18 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, tra
       }
     };
 
+    // YT error codes we treat as "card is unwatchable, skip it":
+    //   100 — video removed / not found
+    //   101 / 150 — embedding disabled by owner (age-restricted videos
+    //     report 150 too)
+    //  2 / 5 are usually transient (bad params / HTML5 hiccup) — ignore.
+    const onError = (event: any) => {
+      const code = event?.data;
+      if (code === 100 || code === 101 || code === 150) {
+        setUnplayable(true);
+      }
+    };
+
     const playerElement = cardRef.current?.querySelector(`#player-${movie.id}`);
     if (playerElement && !playerRef.current) {
       playerRef.current = new window.YT.Player(playerElement.id, {
@@ -132,6 +167,7 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, tra
         events: {
           onReady: onPlayerReady,
           onStateChange: onStateChange,
+          onError: onError,
         },
       });
     }
@@ -300,6 +336,20 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, tra
                   {soundActive ? <UnmutedIcon /> : <MutedIcon />}
                 </button>
               )}
+              {/* Covers YT's "video unavailable / age-restricted" frame with
+                  a brand-styled notice. Auto-skip fires 1.5s after we set
+                  the flag (see useEffect above). */}
+              {unplayable && (
+                <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 bg-ink-900/95 text-center px-6">
+                  <span className="text-3xl">🎬</span>
+                  <p className="text-white text-base font-semibold">
+                    Трейлер недоступен
+                  </p>
+                  <p className="text-brand-muted text-sm">
+                    Переходим к следующему…
+                  </p>
+                </div>
+              )}
             </>
           )}
           {!isLoading && !trailerKey && (
@@ -368,7 +418,7 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, tra
             </div>
           </div>
 
-          <div className="flex justify-around items-end pt-4 gap-2">
+          <div className="flex justify-around items-end pt-4 gap-1 sm:gap-2">
             <ActionButton
               onClick={() => triggerSwipe('left')}
               ariaLabel="Не нравится"
@@ -391,6 +441,15 @@ const TrailerCard: React.FC<TrailerCardProps> = ({ movie, onSwipe, isActive, tra
             >
               <HeartIcon />
             </ActionButton>
+            {onRecommend && (
+              <ActionButton
+                onClick={onRecommend}
+                ariaLabel="Рекомендую друзьям"
+                label="Рекомендую"
+              >
+                <StarIcon />
+              </ActionButton>
+            )}
           </div>
           {/* Discoverability hint. Shown always — keyboard shortcuts are
               invisible without a label and drag-on-desktop is non-obvious
