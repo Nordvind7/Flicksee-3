@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import type { DashboardData } from '@flicksee/shared';
 import { useAuth } from '../../auth/AuthContext';
+import MetricCard from './components/MetricCard';
+import TopContentTable from './components/TopContentTable';
+import FunnelBlock from './components/FunnelBlock';
 
 const REFRESH_MS = 30_000;
 
@@ -51,16 +54,68 @@ const AdminDashboardPage: React.FC = () => {
             : 'Загрузка…'}
         </p>
       </header>
+
       {error && (
         <div className="mb-6 rounded border border-red-500 bg-red-500/10 p-4 text-red-300">
           Ошибка: {error}
         </div>
       )}
+
       {!data && !error && <div className="opacity-60">Загружаю метрики…</div>}
+
       {data && (
-        <pre className="text-xs overflow-x-auto bg-black/30 p-4 rounded">
-          {JSON.stringify(data, null, 2)}
-        </pre>
+        <>
+          <section className="mb-8">
+            <h2 className="text-lg font-semibold mb-3 opacity-80">Юзеры</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <MetricCard label="Всего" value={data.users.total} />
+              <MetricCard label="DAU" value={data.users.dau} hint="за 24 часа" />
+              <MetricCard label="WAU" value={data.users.wau} hint="за 7 дней" />
+              <MetricCard label="MAU" value={data.users.mau} hint="за 30 дней" />
+              <MetricCard label="Новых 24h" value={data.users.new24h} />
+              <MetricCard label="Новых 7d" value={data.users.new7d} />
+              <MetricCard label="Новых 30d" value={data.users.new30d} />
+              <MetricCard label="/start в боте" value={data.users.botStarted} />
+            </div>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-lg font-semibold mb-3 opacity-80">Активность</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+              <MetricCard label="Свайпов 24h" value={data.activity.swipes.d24} />
+              <MetricCard label="Свайпов 7d" value={data.activity.swipes.d7} />
+              <MetricCard label="Свайпов 30d" value={data.activity.swipes.d30} />
+              <MetricCard label="Друзья 7d" value={data.activity.friendships7d} />
+              <MetricCard label="Матчей 24h" value={data.activity.matches.d24} />
+              <MetricCard label="Матчей 7d" value={data.activity.matches.d7} />
+              <MetricCard label="Матчей 30d" value={data.activity.matches.d30} />
+            </div>
+            <div className="rounded-lg bg-white/5 border border-white/10 p-4">
+              <div className="text-xs uppercase tracking-wide opacity-60 mb-2">
+                Свайпы по типу (7 дней)
+              </div>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <span>👍 LIKE: <b>{data.activity.swipesByAction7d.LIKE}</b></span>
+                <span>👎 DISLIKE: <b>{data.activity.swipesByAction7d.DISLIKE}</b></span>
+                <span>✓ SEEN: <b>{data.activity.swipesByAction7d.SEEN}</b></span>
+                <span>⭐ RECOMMEND: <b>{data.activity.swipesByAction7d.RECOMMEND}</b></span>
+              </div>
+            </div>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-lg font-semibold mb-3 opacity-80">Топ контента</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              <TopContentTable title="Топ лайков (7d)" rows={data.topContent.likes7d} countLabel="❤" />
+              <TopContentTable title="Топ дислайков (7d)" rows={data.topContent.dislikes7d} countLabel="👎" />
+              <TopContentTable title="Топ рекомендаций (30d)" rows={data.topContent.recommend30d} countLabel="⭐" />
+            </div>
+          </section>
+
+          <section className="mb-8">
+            <FunnelBlock data={data.funnel7d} />
+          </section>
+        </>
       )}
     </div>
   );
