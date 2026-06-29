@@ -1,5 +1,6 @@
 import React from 'react';
 import Footer from '../../components/Footer';
+import StickyTopBar from './StickyTopBar';
 import Hero from './Hero';
 import HowItWorks from './HowItWorks';
 import BeforeAfter from './BeforeAfter';
@@ -8,6 +9,7 @@ import FinalCTA from './FinalCTA';
 
 const AboutLanding: React.FC = () => (
   <div className="min-h-screen bg-brand-background text-brand-secondary">
+    <StickyTopBar />
     <main>
       <Hero />
       <HowItWorks />
