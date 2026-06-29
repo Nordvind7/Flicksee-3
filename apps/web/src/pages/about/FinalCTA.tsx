@@ -6,17 +6,23 @@ const FinalCTA: React.FC = () => {
   return (
     <section className="px-4 sm:px-8 py-20 sm:py-28 text-center">
       <div className="max-w-xl mx-auto">
-        <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">Готов?</h2>
+        <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">
+          Хватит листать.
+        </h2>
         <p className="text-base sm:text-lg opacity-80 mb-8">
-          Найди что посмотреть за минуту.
+          Найди что посмотреть за 7 минут.
         </p>
         <button
           onClick={() => setOpen(true)}
           className="inline-block px-8 py-4 rounded-xl bg-red-500 hover:bg-red-600 text-white text-lg font-semibold transition-colors"
         >
-          Войти через Telegram
+          Войти через Telegram →
         </button>
-        <p className="text-xs opacity-50 mt-4">Бесплатно. Без email. Без карты.</p>
+        <p className="text-xs opacity-50 mt-4">
+          Бесплатно. Без email. Без подписки.
+          <br />
+          Регистрация — один тап в Telegram.
+        </p>
       </div>
       <LoginPromptModal
         open={open}
