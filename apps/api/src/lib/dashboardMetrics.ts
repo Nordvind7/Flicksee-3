@@ -4,7 +4,10 @@ import type {
   TopContentBlock,
   TopContentRow,
   FunnelBlock,
+  Trends30dBlock,
+  TrendPoint,
 } from '@flicksee/shared';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../db';
 
 function daysAgo(n: number): Date {
@@ -176,4 +179,45 @@ export async function getFunnel7d(): Promise<FunnelBlock> {
   }
 
   return { cohortSize, botStarted, openedWeb, fivePlusSwipes, gotMatch };
+}
+
+// Each table uses a different "happened-at" column:
+//   User  → createdAt (signup)
+//   Swipe → createdAt
+//   Match → matchedAt (NB: not createdAt)
+async function dailyCounts(table: 'User' | 'Swipe' | 'Match'): Promise<TrendPoint[]> {
+  const timeColumn = table === 'Match' ? 'matchedAt' : 'createdAt';
+  // generate_series fills in gaps so the array is always exactly 30 entries.
+  const rows = await prisma.$queryRaw<Array<{ date: Date; count: bigint }>>(
+    Prisma.sql`
+      SELECT d.date::date AS date, COALESCE(c.count, 0)::bigint AS count
+      FROM generate_series(
+        (current_date - interval '29 days')::date,
+        current_date::date,
+        '1 day'
+      ) AS d(date)
+      LEFT JOIN (
+        SELECT date_trunc('day', ${Prisma.raw(`"${timeColumn}"`)})::date AS day,
+               count(*)::bigint AS count
+        FROM ${Prisma.raw(`"${table}"`)}
+        WHERE ${Prisma.raw(`"${timeColumn}"`)} > current_date - interval '30 days'
+        GROUP BY 1
+      ) c ON c.day = d.date
+      ORDER BY d.date ASC
+    `,
+  );
+
+  return rows.map((r) => ({
+    date: r.date.toISOString().slice(0, 10),
+    count: Number(r.count),
+  }));
+}
+
+export async function getTrends30d(): Promise<Trends30dBlock> {
+  const [newUsers, swipes, matches] = await Promise.all([
+    dailyCounts('User'),
+    dailyCounts('Swipe'),
+    dailyCounts('Match'),
+  ]);
+  return { newUsers, swipes, matches };
 }
