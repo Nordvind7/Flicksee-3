@@ -15,6 +15,14 @@ const areFiltersEqual = (a: FilterState, b: FilterState): boolean => {
   return sortedA.every((value, index) => value === sortedB[index]);
 };
 
+// Когда TMDB page после фильтрации по excludedIds даёт 0 — это часто значит
+// что юзер уже свайпнул всех популярных в начале списка, а свежие лежат
+// глубже. Пытаемся подряд ещё несколько страниц, пока не наберём что-то
+// показать или не упрёмся в потолок.
+const MAX_PAGE_HOPS = 5;
+// TMDB разумная глубина: после ~page 50 идёт мусор с низкими рейтингами.
+const MAX_TMDB_PAGE = 50;
+
 const useMovies = (filters: FilterState, excludedIds: Set<number> = new Set()) => {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,27 +42,44 @@ const useMovies = (filters: FilterState, excludedIds: Set<number> = new Set()) =
     let isMounted = true;
 
     const initialize = async () => {
-      // 1. Try to restore state from localStorage
+      // 1. Try to restore state from localStorage. We ALSO re-filter the
+      //    restored deck against the current excludedIds — иначе старый кеш
+      //    с уже-свайпнутыми фильмами утечёт в дека (бывает после быстрой
+      //    серии свайпов или синка с другого устройства).
       try {
         const savedStateRaw = localStorage.getItem('flicksee_swipe_state');
         if (savedStateRaw) {
           const savedState = JSON.parse(savedStateRaw);
-          // Only restore if filters match using the robust comparison function
           if (savedState.filters && areFiltersEqual(savedState.filters, filters)) {
-            if (isMounted) {
-              setMovies(savedState.movies || []);
-              setPage(savedState.page || 1);
-              setHasMore(true);
-              setIsLoading(false);
+            const restored: Movie[] = (savedState.movies || []).filter(
+              (m: Movie) => !excludedRef.current.has(m.id),
+            );
+            // Если после фильтрации почти ничего не осталось — restore не имеет
+            // смысла (currentIndex почти наверняка укажет за конец). Падаем в
+            // свежий fetch ниже.
+            if (restored.length >= 3) {
+              if (isMounted) {
+                setMovies(restored);
+                setPage(savedState.page || 1);
+                setHasMore(true);
+                setIsLoading(false);
+                // Перезаписываем стор отфильтрованной версией, чтобы дальнейшие
+                // повторные restore-ы тоже стартовали с чистого листа.
+                localStorage.setItem(
+                  'flicksee_swipe_state',
+                  JSON.stringify({ movies: restored, page: savedState.page || 1, filters }),
+                );
+              }
+              return;
             }
-            return; // Exit if restored
           }
         }
       } catch (e) {
         console.error("Failed to restore swipe state from localStorage", e);
       }
 
-      // 2. If not restored, fetch fresh data
+      // 2. If not restored, fetch fresh data — possibly hopping pages forward
+      //    if the first page is entirely already-swiped.
       if (isMounted) {
         localStorage.removeItem('flicksee_swipe_state');
         localStorage.removeItem('flicksee_swipe_currentIndex');
@@ -64,21 +89,31 @@ const useMovies = (filters: FilterState, excludedIds: Set<number> = new Set()) =
         setIsLoading(true);
         setError(null);
       }
-      
-      try {
-        const initialMovies = (await fetchDiscoverContent(1, filters)).filter(
-          (m) => !excludedRef.current.has(m.id),
-        );
-        if (isMounted) {
-          if (initialMovies.length === 0) {
-            setHasMore(false);
-          }
-          const nextPage = 2;
-          setMovies(initialMovies);
-          setPage(nextPage);
 
-          // Persist the new initial state
-          const stateToSave = { movies: initialMovies, page: nextPage, filters };
+      try {
+        let currentPage = 1;
+        let collected: Movie[] = [];
+        let exhausted = false;
+
+        for (let hop = 0; hop < MAX_PAGE_HOPS && collected.length === 0; hop++) {
+          if (currentPage > MAX_TMDB_PAGE) {
+            exhausted = true;
+            break;
+          }
+          const fetched = await fetchDiscoverContent(currentPage, filters);
+          collected = fetched.filter((m) => !excludedRef.current.has(m.id));
+          currentPage++;
+        }
+
+        if (isMounted) {
+          if (collected.length === 0) {
+            exhausted = true;
+          }
+          setMovies(collected);
+          setPage(currentPage);
+          setHasMore(!exhausted);
+
+          const stateToSave = { movies: collected, page: currentPage, filters };
           localStorage.setItem('flicksee_swipe_state', JSON.stringify(stateToSave));
         }
       } catch (e) {
@@ -109,11 +144,21 @@ const useMovies = (filters: FilterState, excludedIds: Set<number> = new Set()) =
     setError(null);
 
     try {
-      const newMovies = (await fetchDiscoverContent(page, filters)).filter(
-        (m) => !excludedRef.current.has(m.id),
-      );
-      
-      if (newMovies.length === 0) {
+      // Skip forward through TMDB pages that are entirely already-swiped.
+      // Без этого юзер с длинной историей упирается в "пусто" даже когда
+      // фактически есть свежий контент на page+2, page+3...
+      let currentPage = page;
+      let newMovies: Movie[] = [];
+      for (let hop = 0; hop < MAX_PAGE_HOPS && newMovies.length === 0; hop++) {
+        if (currentPage > MAX_TMDB_PAGE) break;
+        const fetched = await fetchDiscoverContent(currentPage, filters);
+        newMovies = fetched.filter((m) => !excludedRef.current.has(m.id));
+        currentPage++;
+      }
+
+      // Истинный конец каталога: либо упёрлись в потолок, либо MAX_PAGE_HOPS
+      // подряд страниц без единого нового фильма.
+      if (newMovies.length === 0 || currentPage > MAX_TMDB_PAGE) {
         setHasMore(false);
       }
 
@@ -128,17 +173,15 @@ const useMovies = (filters: FilterState, excludedIds: Set<number> = new Set()) =
             return true;
         });
 
-        const nextPage = page + 1;
-        // Persist the new state to localStorage
         try {
-            const stateToSave = { movies: uniqueMovies, page: nextPage, filters };
+            const stateToSave = { movies: uniqueMovies, page: currentPage, filters };
             localStorage.setItem('flicksee_swipe_state', JSON.stringify(stateToSave));
         } catch (e) {
             console.error("Failed to save swipe state to localStorage", e);
         }
         return uniqueMovies;
       });
-      setPage(prevPage => prevPage + 1);
+      setPage(currentPage);
     } catch (e) {
       setError('Не удалось загрузить фильмы.');
       console.error(e);
