@@ -4,7 +4,7 @@ export const APP_NAME = 'Flicksee';
 
 export type ContentType = 'movie' | 'tv';
 
-export type SwipeActionType = 'LIKE' | 'DISLIKE' | 'SEEN';
+export type SwipeActionType = 'LIKE' | 'DISLIKE' | 'SEEN' | 'RECOMMEND';
 
 /** Authenticated user, as returned by the API after Telegram login. */
 export interface AuthUser {
@@ -13,6 +13,8 @@ export interface AuthUser {
   username?: string;
   firstName?: string;
   photoUrl?: string;
+  /** True if this user's telegramId is in the server's ADMIN_TG_IDS allowlist. */
+  isAdmin: boolean;
 }
 
 /** Response of POST /auth/telegram and POST /auth/dev. */
