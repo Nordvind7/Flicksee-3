@@ -84,3 +84,67 @@ export interface ApiError {
   error: string;
   details?: unknown;
 }
+
+// ──── Admin dashboard ────────────────────────────────────────────────
+
+export interface UsersBlock {
+  total: number;
+  dau: number;
+  wau: number;
+  mau: number;
+  new24h: number;
+  new7d: number;
+  new30d: number;
+  botStarted: number;
+}
+
+export interface ActivityBlock {
+  swipes: { d24: number; d7: number; d30: number };
+  swipesByAction7d: { LIKE: number; DISLIKE: number; SEEN: number; RECOMMEND: number };
+  matches: { d24: number; d7: number; d30: number };
+  friendships7d: number;
+}
+
+export interface TopContentRow {
+  tmdbId: number;
+  contentType: 'MOVIE' | 'TV';
+  title: string;
+  posterPath: string | null;
+  count: number;
+  /** Only present for LIKE rows: likes / (likes + dislikes). 0..1. */
+  likeRatio?: number;
+}
+
+export interface TopContentBlock {
+  likes7d: TopContentRow[];
+  dislikes7d: TopContentRow[];
+  recommend30d: TopContentRow[];
+}
+
+export interface TrendPoint {
+  date: string; // YYYY-MM-DD
+  count: number;
+}
+
+export interface Trends30dBlock {
+  newUsers: TrendPoint[]; // exactly 30 entries
+  swipes: TrendPoint[];
+  matches: TrendPoint[];
+}
+
+export interface FunnelBlock {
+  cohortSize: number;
+  botStarted: number;
+  openedWeb: number;
+  fivePlusSwipes: number;
+  gotMatch: number;
+}
+
+export interface DashboardData {
+  users: UsersBlock;
+  activity: ActivityBlock;
+  topContent: TopContentBlock;
+  trends30d: Trends30dBlock;
+  funnel7d: FunnelBlock;
+  generatedAt: string;
+}
