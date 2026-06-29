@@ -12,6 +12,7 @@ import tmdbRoutes from './routes/tmdb';
 import friendsRoutes from './routes/friends';
 import botRoutes from './routes/bot';
 import adminRoutes from './routes/admin';
+import publicStatsRoute from './routes/publicStats';
 
 export interface BuildAppOptions {
   logger?: boolean;
@@ -77,6 +78,8 @@ export async function buildApp(opts: BuildAppOptions = {}): Promise<FastifyInsta
   // Client calls /api/admin/* — Vite (dev) and nginx (prod) strip /api before
   // hitting the API, matching the convention used by /auth, /swipes, etc.
   await app.register(adminRoutes, { prefix: '/admin' });
+  // Public endpoints (no auth). Currently just the landing-page live counter.
+  await app.register(publicStatsRoute, { prefix: '/public' });
 
   return app;
 }
